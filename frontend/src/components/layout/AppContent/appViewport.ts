@@ -1,16 +1,34 @@
+/**
+ * When no virtual keyboard is open, return null so the CSS fallback `100dvh`
+ * is used — this ensures full-screen coverage on iOS PWA standalone mode where
+ * `visualViewport.height` can be smaller than the actual screen.
+ *
+ * When the keyboard IS open (visual viewport significantly smaller than window),
+ * return the measured height so the app shrinks to stay above the keyboard.
+ */
+const KEYBOARD_THRESHOLD_PX = 100;
+
 export function getAppViewportHeightCssValue({
   visualViewportHeight,
   windowInnerHeight,
 }: {
   visualViewportHeight?: number | null;
   windowInnerHeight?: number | null;
-}): string {
-  const measuredHeight = visualViewportHeight ?? windowInnerHeight;
-  if (!measuredHeight || measuredHeight <= 0) {
-    return "100dvh";
+}): string | null {
+  const vvHeight = visualViewportHeight ?? null;
+  const wHeight = windowInnerHeight ?? null;
+
+  if (!vvHeight || !wHeight || vvHeight <= 0 || wHeight <= 0) {
+    return null;
   }
 
-  return `${Math.round(measuredHeight)}px`;
+  // Keyboard likely open — use measured visual viewport height
+  if (wHeight - vvHeight > KEYBOARD_THRESHOLD_PX) {
+    return `${Math.round(vvHeight)}px`;
+  }
+
+  // No keyboard — let CSS 100dvh handle full-screen height
+  return null;
 }
 
 function parsePixelValue(value: string | null | undefined): number | null {
@@ -24,8 +42,11 @@ function parsePixelValue(value: string | null | undefined): number | null {
 
 export function shouldUpdateAppViewportHeight(
   previousValue: string | null | undefined,
-  nextValue: string,
+  nextValue: string | null,
 ): boolean {
+  if (previousValue === nextValue) return false;
+  if (previousValue == null || nextValue == null) return true;
+
   const previousPx = parsePixelValue(previousValue);
   const nextPx = parsePixelValue(nextValue);
 

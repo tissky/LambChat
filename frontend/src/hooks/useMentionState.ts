@@ -37,6 +37,10 @@ export function useMentionState(
   presets: PersonaPreset[],
 ) {
   const [highlightedIndex, setHighlightedIndex] = useState(0);
+  const [dismissKey, setDismissKey] = useState(0);
+  const dismissedAtRef = useRef<{ input: string; atIndex: number } | null>(
+    null,
+  );
   const resultCountRef = useRef(0);
 
   const mention: MentionState = useMemo(() => {
@@ -49,13 +53,21 @@ export function useMentionState(
       return { isActive: false, query: "", atIndex: -1, highlightedIndex: 0 };
     }
 
+    if (
+      dismissedAtRef.current &&
+      dismissedAtRef.current.input === input &&
+      dismissedAtRef.current.atIndex === detected.atIndex
+    ) {
+      return { isActive: false, query: "", atIndex: -1, highlightedIndex: 0 };
+    }
+
     return {
       isActive: true,
       query: detected.query,
       atIndex: detected.atIndex,
       highlightedIndex,
     };
-  }, [input, cursorPosition, presets.length, highlightedIndex]);
+  }, [input, cursorPosition, presets.length, highlightedIndex, dismissKey]);
 
   const moveHighlight = useCallback((direction: "up" | "down") => {
     const len = resultCountRef.current;
@@ -72,6 +84,15 @@ export function useMentionState(
     setHighlightedIndex(0);
   }, []);
 
+  const dismissMention = useCallback(() => {
+    const detected = detectMention(input, cursorPosition);
+    if (detected) {
+      dismissedAtRef.current = { input, atIndex: detected.atIndex };
+    }
+    setHighlightedIndex(0);
+    setDismissKey((v) => v + 1);
+  }, [input, cursorPosition]);
+
   const setResultCount = useCallback((count: number) => {
     resultCountRef.current = count;
     setHighlightedIndex((prev) => (prev >= count ? 0 : prev));
@@ -83,5 +104,6 @@ export function useMentionState(
     setHighlightedIndex,
     setResultCount,
     resetMention,
+    dismissMention,
   };
 }

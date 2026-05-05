@@ -115,9 +115,21 @@ export function MentionPopup({
     }
   }, [hasMore, isLoadingMore, onLoadMore]);
 
+  const anchorRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (anchorRef.current && !anchorRef.current.contains(e.target as Node)) {
+        onClose();
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [onClose]);
+
   return (
-    <div className="mention-popup-anchor" onMouseDown={onClose}>
-      <div className="mention-popup" onMouseDown={(e) => e.stopPropagation()}>
+    <div ref={anchorRef} className="mention-popup-anchor">
+      <div className="mention-popup">
         <div className="mention-popup-content">
           {isLoading && presets.length === 0 ? (
             <div className="mention-popup-list">

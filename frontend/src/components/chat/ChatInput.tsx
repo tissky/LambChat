@@ -223,6 +223,7 @@ export const ChatInput = memo(function ChatInput({
     setHighlightedIndex: setMentionHighlight,
     setResultCount: setMentionResultCount,
     resetMention,
+    dismissMention,
   } = useMentionState(input, cursorPosition, mentionPresets);
 
   const mentionSearch = useMentionSearch(mention.query, mention.isActive);
@@ -617,7 +618,7 @@ export const ChatInput = memo(function ChatInput({
               hasMore={mentionSearch.hasMore}
               onSelect={applyMentionSelection}
               onHover={setMentionHighlight}
-              onClose={resetMention}
+              onClose={dismissMention}
               onLoadMore={mentionSearch.loadMore}
             />
           )}

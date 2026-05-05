@@ -125,7 +125,10 @@ export function Header({
 
   return (
     <>
-      <header className="relative z-50 flex items-center px-3 pt-3 sm:px-5 pb-1">
+      <header
+        className="relative z-50 flex items-center px-3 sm:px-5 pb-1"
+        style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top))" }}
+      >
         {/* Left */}
         <div className="flex items-center gap-2 flex-shrink-0">
           {activeTab === "chat" ? (

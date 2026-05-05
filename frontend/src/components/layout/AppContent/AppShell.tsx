@@ -65,7 +65,7 @@ export function AppShell({
 
     const rootStyle = document.documentElement.style;
     let raf = 0;
-    let viewportHeightValue = "";
+    let viewportHeightValue: string | null = "";
 
     const updateViewportHeight = () => {
       cancelAnimationFrame(raf);
@@ -82,10 +82,14 @@ export function AppShell({
           )
         ) {
           viewportHeightValue = nextViewportHeightValue;
-          rootStyle.setProperty(
-            "--app-viewport-height",
-            nextViewportHeightValue,
-          );
+          if (nextViewportHeightValue == null) {
+            rootStyle.removeProperty("--app-viewport-height");
+          } else {
+            rootStyle.setProperty(
+              "--app-viewport-height",
+              nextViewportHeightValue,
+            );
+          }
         }
       });
     };

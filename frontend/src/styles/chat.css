@@ -394,6 +394,10 @@
 }
 
 @media (max-width: 639px) {
+  .mention-popup-list {
+    max-height: 200px;
+  }
+
   .mention-popup-item {
     padding: 0.375rem 0.75rem;
     font-size: 14px;
