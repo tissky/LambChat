@@ -1,7 +1,12 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { buildFileCardPreview, getSessionNavigationTarget } from "../utils.ts";
 import type { RevealedFileItem } from "../../../services/api";
+
+function readSource(relativePath: string): string {
+  return readFileSync(new URL(relativePath, import.meta.url), "utf8");
+}
 
 function createFile(
   overrides: Partial<RevealedFileItem> = {},
@@ -82,4 +87,13 @@ test("builds a project card preview without fetching project files", () => {
   assert.equal(preview.badge, "REACT");
   assert.equal(preview.subtitle, "12 files");
   assert.deepEqual(preview.lines, ["Entry /src/main.tsx", "12 files indexed"]);
+});
+
+test("file library document previews fill the mobile viewport like chat previews", () => {
+  const source = readSource("../RevealedFilesPanel.tsx");
+
+  assert.match(
+    source,
+    /<DocumentPreview[\s\S]*?\bmobileFillViewport\b[\s\S]*?\/>/,
+  );
 });

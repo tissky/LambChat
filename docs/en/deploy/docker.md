@@ -34,21 +34,26 @@ Docker Compose starts three services:
 Copy `deploy/.env.example` to `.env` and configure:
 
 ```bash
-# Required: Set a stable JWT secret
+# Recommended: Set a stable JWT secret (auto-generated on each restart if unset, invalidating existing sessions)
 JWT_SECRET_KEY=your-stable-secret-key
 
-# Required: Set your LLM provider
-LLM_API_KEY=sk-your-api-key
-LLM_API_BASE=https://api.openai.com/v1
-LLM_MODEL=gpt-4o
+# Recommended: Set MCP encryption salt (auto-generated on each restart if unset, invalidating saved MCP configs)
+MCP_ENCRYPTION_SALT=your-stable-encryption-salt
 
-# Optional: Configure MongoDB auth
+# Optional: Configure MongoDB connection
+MONGODB_URL=mongodb://localhost:27017
+MONGODB_DB=agent_state
 MONGODB_USERNAME=admin
 MONGODB_PASSWORD=your-mongo-password
 
-# Optional: Configure Redis auth
+# Optional: Configure Redis connection
+REDIS_URL=redis://localhost:6379/0
 REDIS_PASSWORD=your-redis-password
 ```
+
+::: tip
+LLM models are configured through the **Model Config UI** after deployment — no environment variables needed. See [LLM Configuration](/en/env/llm) for details.
+:::
 
 See [Environment Variables](/en/env/app) for the complete reference.
 

@@ -158,6 +158,35 @@ make install-pnpm      # 安装 pnpm（如未安装）
 make install && make dev
 ```
 
+<details>
+<summary><b>📝 必填配置</b></summary>
+
+编辑 `.env` 文件，填写以下推荐配置：
+
+```bash
+# 推荐：设置稳定的 JWT 密钥（不设置则每次重启自动生成，导致已登录用户失效）
+JWT_SECRET_KEY=your-stable-secret-key
+
+# 推荐：设置 MCP 加密盐值（不设置则每次重启自动生成，导致已保存的 MCP 配置失效）
+MCP_ENCRYPTION_SALT=your-stable-encryption-salt
+
+# 可选：配置 MongoDB 连接
+MONGODB_URL=mongodb://localhost:27017
+MONGODB_DB=agent_state
+MONGODB_USERNAME=admin
+MONGODB_PASSWORD=your-mongo-password
+
+# 可选：配置 Redis 连接
+REDIS_URL=redis://localhost:6379/0
+REDIS_PASSWORD=your-redis-password
+```
+
+::: tip
+LLM 模型通过部署后的 **模型配置 UI** 添加，无需在环境变量中配置。
+:::
+
+</details>
+
 打开 **http://localhost:8000**
 
 ### 代码质量

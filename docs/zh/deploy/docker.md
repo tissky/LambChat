@@ -34,21 +34,26 @@ Docker Compose 启动三个服务：
 将 `deploy/.env.example` 复制为 `.env` 并配置：
 
 ```bash
-# 必填：设置稳定的 JWT 密钥
+# 推荐：设置稳定的 JWT 密钥（不设置则每次重启自动生成，导致已登录用户失效）
 JWT_SECRET_KEY=your-stable-secret-key
 
-# 必填：设置你的 LLM 提供商
-LLM_API_KEY=sk-your-api-key
-LLM_API_BASE=https://api.openai.com/v1
-LLM_MODEL=gpt-4o
+# 推荐：设置 MCP 加密盐值（不设置则每次重启自动生成，导致已保存的 MCP 配置失效）
+MCP_ENCRYPTION_SALT=your-stable-encryption-salt
 
-# 可选：配置 MongoDB 认证
+# 可选：配置 MongoDB 连接
+MONGODB_URL=mongodb://localhost:27017
+MONGODB_DB=agent_state
 MONGODB_USERNAME=admin
 MONGODB_PASSWORD=your-mongo-password
 
-# 可选：配置 Redis 认证
+# 可选：配置 Redis 连接
+REDIS_URL=redis://localhost:6379/0
 REDIS_PASSWORD=your-redis-password
 ```
+
+::: tip
+LLM 模型通过部署后的 **模型配置 UI** 添加，无需在环境变量中配置。详见[模型配置](/zh/env/llm)。
+:::
 
 完整参考见[环境变量](/zh/env/app)。
 

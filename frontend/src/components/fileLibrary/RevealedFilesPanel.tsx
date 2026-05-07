@@ -187,6 +187,7 @@ export function RevealedFilesPanel() {
             fileSize={previewFile.file_size}
             mimeType={previewFile.mime_type ?? undefined}
             onClose={handlePreviewClose}
+            mobileFillViewport
           />
         )}
       </DelayedUnmount>
