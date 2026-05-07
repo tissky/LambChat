@@ -2,6 +2,11 @@ import { memo, useEffect, useMemo, useState } from "react";
 import { FileText, AlertCircle } from "lucide-react";
 import { LoadingSpinner } from "../../common/LoadingSpinner";
 import DOMPurify from "dompurify";
+import {
+  docxTextToHtml,
+  extractDocxTextFallback,
+  isDocxSafeForMammoth,
+} from "./wordPreviewUtils";
 
 interface WordPreviewProps {
   arrayBuffer: ArrayBuffer;
@@ -213,7 +218,24 @@ const WordPreview = memo(function WordPreview({
 
   useEffect(() => {
     const convertWord = async () => {
+      const renderTextFallback = async () => {
+        const fallbackText = await extractDocxTextFallback(arrayBuffer);
+        if (fallbackText.trim()) {
+          setHtml(docxTextToHtml(fallbackText));
+          setError(null);
+          return true;
+        }
+        return false;
+      };
+
       try {
+        if (!(await isDocxSafeForMammoth(arrayBuffer))) {
+          if (!(await renderTextFallback())) {
+            setError(t("documents.wordConversionError"));
+          }
+          return;
+        }
+
         const mammoth = await import("mammoth");
         const result = await mammoth.default.convertToHtml(
           { arrayBuffer },
@@ -232,11 +254,15 @@ const WordPreview = memo(function WordPreview({
         setHtml(result.value);
         setError(null);
       } catch (err) {
-        setError(
-          err instanceof Error
-            ? err.message
-            : t("documents.wordConversionError"),
-        );
+        try {
+          if (await renderTextFallback()) {
+            return;
+          }
+        } catch (fallbackErr) {
+          console.error("Failed to extract DOCX text fallback:", fallbackErr);
+        }
+        console.error("Failed to convert Word document:", err);
+        setError(t("documents.wordConversionError"));
       } finally {
         setLoading(false);
       }

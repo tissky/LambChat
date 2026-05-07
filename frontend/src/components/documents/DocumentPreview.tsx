@@ -37,6 +37,7 @@ import {
   isImageFile,
   isPdfFile,
   isWordFile,
+  isWordPreviewFile,
   isLegacyDocFile,
   isExcelFile,
   isPptFile,
@@ -181,6 +182,7 @@ export default function DocumentPreview({
   const imageFile = isImageFile(ext);
   const pdfFile = isPdfFile(ext);
   const wordFile = isWordFile(ext);
+  const wordPreviewFile = isWordPreviewFile(ext);
   const legacyDocFile = isLegacyDocFile(ext);
   const excelFile = isExcelFile(ext);
   const pptxFile = isPptxFile(ext);
@@ -373,7 +375,7 @@ export default function DocumentPreview({
           if (resolvedBinaryFile) {
             // 二进制文件，只设置路径用于下载
             setData({ content: "", path });
-          } else if (wordFile || excelFile) {
+          } else if (wordPreviewFile || excelFile) {
             // Word/Excel 文件需要作为 ArrayBuffer 处理
             const buffer = await fetchDocumentArrayBuffer(url);
             setArrayBuffer(buffer);
@@ -865,7 +867,7 @@ export default function DocumentPreview({
             </button>
           </div>
         </div>
-      ) : wordFile && arrayBuffer ? (
+      ) : wordPreviewFile && arrayBuffer ? (
         <Suspense
           fallback={
             <div className="flex items-center justify-center h-full min-h-[400px]">

@@ -290,9 +290,14 @@ export function isWordFile(ext: string): boolean {
   return wordExts.includes(ext);
 }
 
+// Check if file is supported by the in-browser Word preview converter
+export function isWordPreviewFile(ext: string): boolean {
+  return ext === "docx";
+}
+
 // Check if file is legacy Word format (.doc)
 export function isLegacyDocFile(ext: string): boolean {
-  return ext === "doc";
+  return isWordFile(ext) && !isWordPreviewFile(ext);
 }
 
 // Check if file is Excel spreadsheet

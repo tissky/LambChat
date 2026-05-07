@@ -14,6 +14,7 @@ export {
   isImageFile,
   isPdfFile,
   isWordFile,
+  isWordPreviewFile,
   isExcelFile,
   isPptFile,
   isPptxFile,
