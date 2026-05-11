@@ -1,10 +1,9 @@
 import { type ReactNode, useMemo, useState } from "react";
-import { FolderTree, Code2, ChevronRight } from "lucide-react";
+import { FolderTree, Code2, ChevronRight, Download, Copy } from "lucide-react";
 import clsx from "clsx";
 import { useTranslation } from "react-i18next";
 import type { MessagePart } from "../../../types";
-import { getFileTypeInfo } from "../../documents/utils";
-import { formatFileSize } from "../../documents/utils/fileSize";
+import { getFileTypeInfo, isImageFile } from "../../documents/utils";
 import { openPersistentToolPanel } from "./items/persistentToolPanelState";
 import type { RevealPreviewOpenSource } from "./items/revealPreviewState";
 import type { RevealPreviewRequest } from "./items/revealPreviewData";
@@ -53,53 +52,101 @@ function FolderIcon({
 /*  Tree renderer                                                      */
 /* ------------------------------------------------------------------ */
 
+const FILE_ICON_SIZE = 36;
+
+function formatSize(bytes?: number): string {
+  if (bytes == null) return "";
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(2)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+}
+
+function downloadFile(name: string, url?: string) {
+  if (!url) return;
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = name;
+  a.click();
+}
+
+function getTreeDirSize(node: RevealArtifactTreeDir): number {
+  return node.children.reduce((sum, child) => {
+    if (child.kind === "file") {
+      return sum + (child.artifact.fileSize || 0);
+    }
+    return sum + getTreeDirSize(child);
+  }, 0);
+}
+
+function getFileIcon(name: string) {
+  const info = getFileTypeInfo(name);
+  const Icon = info.icon;
+  return (
+    <Icon size={FILE_ICON_SIZE} className={clsx("shrink-0", info.color)} />
+  );
+}
+
 function TreeFileRow({
   node,
-  depth,
   onOpenPreview,
 }: {
   node: RevealArtifactTreeFile;
-  depth: number;
   onOpenPreview?: (
     preview: RevealPreviewRequest,
     source?: RevealPreviewOpenSource,
   ) => boolean;
 }) {
-  const info = getFileTypeInfo(node.artifact.path);
-  const Icon = info.icon;
-  const sub = node.artifact.fileSize
-    ? formatFileSize(node.artifact.fileSize)
-    : node.artifact.description;
+  const { t } = useTranslation();
+  const ext = node.artifact.name.split(".").pop()?.toLowerCase() || "";
+  const imageSrc = isImageFile(ext) ? node.artifact.preview.signedUrl : null;
 
   return (
     <button
       type="button"
       onClick={() => onOpenPreview?.(node.artifact.preview, "manual")}
-      className={clsx(
-        "group flex w-full cursor-pointer items-center gap-3 rounded-xl py-2 text-left",
-        "border border-transparent transition-all duration-200",
-        "hover:border-[var(--theme-border)] hover:bg-[var(--theme-primary-light)]/60",
-      )}
-      style={{
-        paddingLeft: `${12 + depth * 16}px`,
-        paddingRight: "12px",
-      }}
+      className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl hover:bg-stone-50 dark:hover:bg-stone-800/60 transition-colors group cursor-pointer"
     >
-      <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-[var(--theme-bg)] shadow-[inset_0_0_0_1px_var(--theme-border)] dark:shadow-none transition-colors group-hover:bg-[var(--theme-primary-light)]">
-        <Icon size={15} className={clsx("shrink-0", info.color)} />
-      </span>
-      <span className="min-w-0 flex-1 text-left">
-        <span className="block truncate text-[13px] font-medium leading-5 text-[var(--theme-text)]">
+      {imageSrc ? (
+        <img
+          src={imageSrc}
+          alt={node.artifact.name}
+          className="w-9 h-9 rounded-lg object-cover shrink-0 bg-stone-100 dark:bg-stone-800"
+        />
+      ) : (
+        getFileIcon(node.artifact.name)
+      )}
+      <div className="flex-1 min-w-0 text-left">
+        <div className="text-sm text-stone-700 dark:text-stone-300 truncate">
           {node.artifact.name}
-        </span>
-        <span className="mt-0.5 block truncate text-[11px] leading-4 text-[var(--theme-text-secondary)]">
-          {sub || node.artifact.path}
-        </span>
+        </div>
+        <div className="text-xs text-stone-400 dark:text-stone-500 mt-0.5">
+          {node.artifact.fileSize
+            ? formatSize(node.artifact.fileSize)
+            : node.artifact.description || node.artifact.path}
+        </div>
+      </div>
+      <span
+        onClick={(e) => {
+          e.stopPropagation();
+          downloadFile(node.artifact.name, node.artifact.preview.signedUrl);
+        }}
+        className="shrink-0 p-1.5 rounded-lg text-stone-400 dark:text-stone-500 hover:text-stone-600 dark:hover:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-700 opacity-0 group-hover:opacity-100 transition-all"
+        title={t("project.exportZip")}
+      >
+        <Download size={20} />
       </span>
-      <ChevronRight
-        size={12}
-        className="shrink-0 text-[var(--theme-text-secondary)] opacity-0 transition-all duration-200 group-hover:translate-x-0.5 group-hover:opacity-100"
-      />
+      <span
+        onClick={(e) => {
+          e.stopPropagation();
+          navigator.clipboard.writeText(
+            node.artifact.preview.signedUrl || node.artifact.path,
+          );
+        }}
+        className="shrink-0 p-1.5 rounded-lg text-stone-400 dark:text-stone-500 hover:text-stone-600 dark:hover:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-700 opacity-0 group-hover:opacity-100 transition-all"
+        title={t("chat.message.copy")}
+      >
+        <Copy size={20} />
+      </span>
     </button>
   );
 }
@@ -118,52 +165,56 @@ function TreeDirRow({
     source?: RevealPreviewOpenSource,
   ) => boolean;
 }) {
-  const { t } = useTranslation();
   const [expanded, setExpanded] = useState(defaultExpanded ?? false);
+  const dirSize = expanded ? getTreeDirSize(node) : 0;
 
   return (
     <div>
       <button
         type="button"
         onClick={() => setExpanded((v) => !v)}
-        className="group flex w-full cursor-pointer items-center gap-3 rounded-xl px-1 py-2.5 text-left transition-colors hover:bg-[var(--theme-primary-light)]"
+        className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl hover:bg-stone-50 dark:hover:bg-stone-800/60 transition-colors"
       >
         <FolderIcon size={36} className="shrink-0" />
-        <span className="min-w-0 flex-1 text-left">
-          <span className="block truncate text-sm font-medium leading-5 text-[var(--theme-text)]">
+        <div className="flex-1 min-w-0 text-left">
+          <div className="text-sm font-medium text-stone-800 dark:text-stone-200 truncate">
             {node.name}
-          </span>
-          <span className="mt-0.5 block truncate text-xs leading-4 text-[var(--theme-text-secondary)]">
-            {node.fileCount} {t("chat.message.files", "文件")}
-          </span>
-        </span>
+          </div>
+          {expanded && dirSize > 0 && (
+            <div className="text-xs text-stone-400 dark:text-stone-500 mt-0.5">
+              {formatSize(dirSize)}
+            </div>
+          )}
+        </div>
         <ChevronRight
           size={18}
           className={clsx(
-            "shrink-0 text-[var(--theme-text-secondary)] transition-transform duration-200",
+            "shrink-0 text-stone-400 transition-transform duration-200",
             expanded && "rotate-90",
           )}
         />
       </button>
-      {expanded &&
-        node.children.map((child, i) =>
-          child.kind === "dir" ? (
-            <TreeDirRow
-              key={child.path || `d-${i}`}
-              node={child}
-              depth={depth + 1}
-              defaultExpanded={defaultExpanded}
-              onOpenPreview={onOpenPreview}
-            />
-          ) : (
-            <TreeFileRow
-              key={child.artifact.id}
-              node={child}
-              depth={depth + 1}
-              onOpenPreview={onOpenPreview}
-            />
-          ),
-        )}
+      {expanded && (
+        <div className={clsx(depth === 0 ? "pl-2" : "pl-4")}>
+          {node.children.map((child, i) =>
+            child.kind === "dir" ? (
+              <TreeDirRow
+                key={child.path || `d-${i}`}
+                node={child}
+                depth={depth + 1}
+                defaultExpanded={defaultExpanded}
+                onOpenPreview={onOpenPreview}
+              />
+            ) : (
+              <TreeFileRow
+                key={child.artifact.id}
+                node={child}
+                onOpenPreview={onOpenPreview}
+              />
+            ),
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -329,7 +380,7 @@ export function RevealArtifactsSummary({
               </span>
             </div>
           </div>
-          <div className="flex-1 space-y-3 overflow-y-auto px-3 py-3 scroll-smooth">
+          <div className="flex-1 overflow-y-auto p-1.5">
             {projects.length > 0 && (
               <section>
                 <SectionTitle count={projects.length}>
@@ -365,7 +416,6 @@ export function RevealArtifactsSummary({
                       <TreeFileRow
                         key={child.artifact.id}
                         node={child}
-                        depth={0}
                         onOpenPreview={onOpenPreview}
                       />
                     ),
