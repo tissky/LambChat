@@ -65,7 +65,7 @@ export const WelcomePage = memo(function WelcomePage({
           <img
             src="/icons/icon.svg"
             alt="LambChat"
-            className="welcome-icon relative size-10 rounded-xl shadow-md ring-1 ring-stone-200/60 dark:ring-stone-700/40"
+            className="welcome-icon relative size-10 rounded-full shadow-md ring-1 ring-stone-200/60 dark:ring-stone-700/40"
           />
         </div>
 

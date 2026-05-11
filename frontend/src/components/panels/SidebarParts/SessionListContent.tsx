@@ -458,7 +458,7 @@ export function SessionListContent({
               />
             ) : (
               <div className="flex w-full h-full items-center justify-center bg-gradient-to-br from-amber-400 to-orange-500 rounded-full">
-                <span className="text-xs font-semibold text-white">
+                <span className="text-xs font-semibold text-white font-serif">
                   {user?.username?.charAt(0).toUpperCase() || "U"}
                 </span>
               </div>
@@ -468,7 +468,7 @@ export function SessionListContent({
             <div className="text-sm font-medium text-stone-800 dark:text-stone-100 truncate">
               {user?.username || "User"}
             </div>
-            <div className="text-xs text-stone-400 dark:text-stone-500 whitespace-nowrap">
+            <div className="text-xs text-stone-400 dark:text-stone-500 whitespace-nowrap font-serif">
               {(user?.roles?.[0] || "User").replace(/^./, (c) =>
                 c.toUpperCase(),
               )}

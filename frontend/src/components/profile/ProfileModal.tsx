@@ -165,7 +165,7 @@ export function ProfileModal({
         target="_blank"
         rel="noopener noreferrer"
         onClick={(e) => e.stopPropagation()}
-        className="px-1.5 sm:px-2 text-[11px] font-medium text-stone-400 dark:text-stone-500 hover:text-stone-600 dark:hover:text-stone-300 transition-colors py-1 rounded-md hover:bg-stone-100 dark:hover:bg-stone-700/60 shrink-0"
+        className="px-1.5 sm:px-2 text-[11px] font-medium text-stone-400 dark:text-stone-500 hover:text-stone-600 dark:hover:text-stone-300 transition-colors py-1 rounded-md hover:bg-stone-100 dark:hover:bg-stone-700/60 shrink-0 font-serif"
       >
         {t("common.poweredBy")}
       </a>
@@ -194,7 +194,7 @@ export function ProfileModal({
 
         {/* Header */}
         <div className="px-4 py-2.5 flex items-center justify-between">
-          <h3 className="text-[15px] font-semibold text-stone-900 dark:text-stone-100 tracking-tight">
+          <h3 className="text-[15px] font-semibold text-stone-900 dark:text-stone-100 tracking-tight font-serif">
             {t("profile.title")}
           </h3>
           {renderCloseButton()}

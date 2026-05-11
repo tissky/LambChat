@@ -258,7 +258,7 @@ export function UserMenu({ onShowProfile }: UserMenuProps) {
             />
           ) : (
             <div className="flex size-5 items-center justify-center bg-gradient-to-br from-amber-400 to-orange-500 rounded-full">
-              <span className="text-xs font-semibold text-white">
+              <span className="text-xs font-semibold text-white font-serif">
                 {user?.username?.charAt(0).toUpperCase() || "U"}
               </span>
             </div>

@@ -163,12 +163,12 @@ export function ProfileInfoTab() {
             <img
               src={user.avatar_url}
               alt="Avatar"
-              className="w-20 h-20 rounded-full object-cover border-4 border-white dark:border-stone-700 shadow-lg ring-2 ring-stone-100 dark:ring-stone-600"
+              className="size-20 rounded-full object-cover border-4 border-white dark:border-stone-700 shadow-lg ring-2 ring-stone-100 dark:ring-stone-600"
               onError={() => setImgError(true)}
             />
           ) : (
-            <div className="w-20 h-20 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center border-4 border-white dark:border-stone-700 shadow-lg ring-2 ring-stone-100 dark:ring-stone-600">
-              <span className="text-2xl font-bold text-white">
+            <div className="size-20 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center border-4 border-white dark:border-stone-700 shadow-lg ring-2 ring-stone-100 dark:ring-stone-600">
+              <span className="text-3xl font-bold text-white font-serif">
                 {user?.username?.charAt(0).toUpperCase() || "U"}
               </span>
             </div>
