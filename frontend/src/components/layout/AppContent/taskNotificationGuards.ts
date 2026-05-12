@@ -4,6 +4,11 @@ export interface TaskNotificationSurfaceInput {
   visibilityState: DocumentVisibilityState;
 }
 
+export interface BrowserNotificationAttemptInput {
+  isSupported: boolean;
+  cachedPermission: NotificationPermission;
+}
+
 export function shouldSurfaceTaskNotification({
   notificationSessionId,
   currentSessionId,
@@ -12,4 +17,10 @@ export function shouldSurfaceTaskNotification({
   return !(
     currentSessionId === notificationSessionId && visibilityState === "visible"
   );
+}
+
+export function shouldAttemptBrowserNotification({
+  isSupported,
+}: BrowserNotificationAttemptInput): boolean {
+  return isSupported;
 }

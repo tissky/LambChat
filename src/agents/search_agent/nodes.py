@@ -23,7 +23,11 @@ from src.agents.core.persona import build_persona_prompt_sections
 from src.agents.core.subagent_prompts import SUBAGENT_PROMPT, get_memory_guide
 from src.agents.core.thinking import build_thinking_config
 from src.agents.search_agent.context import SearchAgentContext
-from src.agents.search_agent.prompt import DEFAULT_SYSTEM_PROMPT, SANDBOX_SYSTEM_PROMPT
+from src.agents.search_agent.prompt import (
+    DEFAULT_SYSTEM_PROMPT,
+    SANDBOX_RUNTIME_SECTION,
+    SANDBOX_SYSTEM_PROMPT,
+)
 from src.infra.agent import AgentEventProcessor
 from src.infra.agent.middleware import (
     EnvVarPromptMiddleware,
@@ -101,7 +105,13 @@ async def agent_node(state: Dict[str, Any], config: RunnableConfig) -> Dict[str,
 
     # 创建 Backend 工厂和获取系统提示
     backend_start = time.time()
-    backend_factory, system_prompt, store, sandbox_backend = await _create_backend_and_prompt(
+    (
+        backend_factory,
+        system_prompt,
+        store,
+        sandbox_backend,
+        sandbox_work_dir,
+    ) = await _create_backend_and_prompt(
         state=state,
         context=context,
         presenter=presenter,
@@ -109,6 +119,7 @@ async def agent_node(state: Dict[str, Any], config: RunnableConfig) -> Dict[str,
     )
     backend_init_time = time.time() - backend_start
     logger.debug(f"[Agent] Backend init: {backend_init_time * 1000:.3f}ms")
+    backend = backend_factory(None) if callable(backend_factory) else backend_factory
 
     # 构建 persona + skills 提示（使用预加载的 skills，避免重复数据库查询）
     persona_sections = build_persona_prompt_sections(configurable.get("persona_system_prompt"))
@@ -156,7 +167,7 @@ async def agent_node(state: Dict[str, Any], config: RunnableConfig) -> Dict[str,
         *create_retry_middleware(fallback_model=fallback_model_value, thinking=thinking_config),
         MCPQuotaMiddleware(user_id=context.user_id),
         ToolResultBinaryMiddleware(base_url=search_base_url),
-        SubagentActivityMiddleware(backend=backend_factory),
+        SubagentActivityMiddleware(backend=backend),
     ]
     if sandbox_backend:
         subagent_middleware.append(EnvVarPromptMiddleware(user_id=context.user_id or "default"))
@@ -179,25 +190,28 @@ async def agent_node(state: Dict[str, Any], config: RunnableConfig) -> Dict[str,
         }
     ]
 
-    # 构建中间件栈：retry → binary → sandbox_mcp → skills+memory → memory_index → tool search → cache tag
+    # 构建中间件栈：retry → binary → skills+memory → sandbox runtime/tools → memory_index → tool search → cache tag
     # Order: stable → semi-stable → dynamic → cache breakpoint
-    # sandbox_mcp 在 skills 前使 memory_guide 紧挨 memory_index，形成连续 memory 区域
     user_middleware = create_retry_middleware(
         fallback_model=fallback_model_value, thinking=thinking_config
     )
     user_middleware.append(MCPQuotaMiddleware(user_id=context.user_id))
     user_middleware.append(ToolResultBinaryMiddleware(base_url=search_base_url))
-    # SandboxMCP: session-stable (30-min cache)
+    # Prompt sections: one SectionPromptMiddleware instance, multiple ordered blocks.
+    # Duplicate middleware classes are rejected by langchain's agent factory.
+    _prompt_sections = [s for s in (*persona_sections, skills_prompt, memory_guide) if s]
+    # Sandbox runtime is user/session-specific; keep it after global-stable blocks.
+    if sandbox_backend:
+        if sandbox_work_dir:
+            _prompt_sections.append(SANDBOX_RUNTIME_SECTION.format(work_dir=sandbox_work_dir))
+    if _prompt_sections:
+        user_middleware.append(SectionPromptMiddleware(sections=_prompt_sections))
+    # Sandbox tool/env prompts are user/session-specific and are appended after static sections.
     if sandbox_backend:
         user_middleware.append(
             SandboxMCPMiddleware(backend=sandbox_backend, user_id=context.user_id or "default")
         )
         user_middleware.append(EnvVarPromptMiddleware(user_id=context.user_id or "default"))
-    # Skills + memory guide: session-static (one SectionPromptMiddleware, multiple blocks)
-    # persona_sections returns 0-2 blocks (role + behavior) for fine-grained KV cache
-    _prompt_sections = [s for s in (*persona_sections, skills_prompt, memory_guide) if s]
-    if _prompt_sections:
-        user_middleware.append(SectionPromptMiddleware(sections=_prompt_sections))
     if settings.ENABLE_MEMORY and settings.NATIVE_MEMORY_INDEX_ENABLED and context.user_id:
         from src.infra.agent.middleware import MemoryIndexMiddleware
 
@@ -221,7 +235,7 @@ async def agent_node(state: Dict[str, Any], config: RunnableConfig) -> Dict[str,
     inner_graph = create_deep_agent(
         model=llm,
         system_prompt=system_prompt,
-        backend=backend_factory,
+        backend=backend,
         tools=filtered_tools,
         checkpointer=inner_checkpointer,
         store=store,  # 传递 PostgresStore
@@ -235,7 +249,7 @@ async def agent_node(state: Dict[str, Any], config: RunnableConfig) -> Dict[str,
     inner_config: RunnableConfig = {
         "configurable": {
             "thread_id": state.get("session_id", str(uuid.uuid4())),
-            "backend": backend_factory,
+            "backend": backend,
             "context": context,  # 传递 context 以便工具访问 user_id
             "disabled_skills": configurable.get("disabled_skills"),
             "enabled_skills": configurable.get("enabled_skills"),
@@ -311,7 +325,7 @@ async def _create_backend_and_prompt(
     context: SearchAgentContext,
     presenter: Presenter,
     assistant_id: str,
-) -> tuple[Any, str, Any, Any]:
+) -> tuple[Any, str, Any, Any, str | None]:
     """
     创建 Backend 工厂函数和系统提示
 
@@ -325,7 +339,7 @@ async def _create_backend_and_prompt(
         assistant_id: 助手 ID
 
     Returns:
-        (backend_factory, system_prompt, store, sandbox_backend) 元组。
+        (backend_factory, system_prompt, store, sandbox_backend, sandbox_work_dir) 元组。
         sandbox_backend 在沙箱模式下为 CompositeBackend 实例，否则为 None。
     """
     # 创建 store（优先 PostgreSQL → MongoDB fallback）
@@ -339,7 +353,7 @@ async def _create_backend_and_prompt(
         logger.info(f"Sandbox disabled, using PersistentBackend for assistant: {assistant_id}")
         backend_factory = create_persistent_backend_factory(assistant_id, user_id=user_id)
         prompt = DEFAULT_SYSTEM_PROMPT
-        return backend_factory, prompt, store, None
+        return backend_factory, prompt, store, None, None
 
     # 沙箱模式
     if not context.user_id:
@@ -373,14 +387,12 @@ async def _create_backend_and_prompt(
 
         logger.info(f"Sandbox enabled, using sandbox backend for assistant: {assistant_id}")
 
-        # 格式化沙箱提示词，注入 work_dir（skills/memory_guide 由 SectionPromptMiddleware 注入）
-        system_prompt = SANDBOX_SYSTEM_PROMPT.replace("{work_dir}", work_dir)
-
         return (
             create_sandbox_backend_factory(sandbox_backend.default, assistant_id, user_id=user_id),
-            system_prompt,
+            SANDBOX_SYSTEM_PROMPT,
             store,
             sandbox_backend,
+            work_dir,
         )
 
     except Exception as e:

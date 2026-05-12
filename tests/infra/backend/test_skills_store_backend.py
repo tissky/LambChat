@@ -121,6 +121,23 @@ async def test_skills_store_backend_reads_disabled_skills_from_runtime_config() 
     assert [_field(entry, "path") for entry in _field(result, "entries")] == ["/visible/"]
 
 
+async def test_skills_store_backend_reads_disabled_skills_from_graph_config(
+    monkeypatch,
+) -> None:
+    from src.infra.backend import skills_store as module
+
+    def fake_get_config():
+        return {"configurable": {"disabled_skills": ["hidden"]}}
+
+    monkeypatch.setattr(module, "get_config", fake_get_config, raising=False)
+    backend = SkillsStoreBackend(user_id="user-1")
+    backend._storage = _FakeSkillStorage()
+
+    result = await backend.als("/skills/")
+
+    assert [_field(entry, "path") for entry in _field(result, "entries")] == ["/visible/"]
+
+
 async def test_skills_store_backend_limits_root_and_reads_to_enabled_skills() -> None:
     backend = SkillsStoreBackend(user_id="user-1", enabled_skills=["visible"])
     backend._storage = _FakeSkillStorage()
@@ -157,6 +174,23 @@ async def test_skills_store_backend_reads_enabled_skills_from_runtime_config() -
         user_id="user-1",
         runtime=_FakeRuntime(enabled_skills=["visible"]),
     )
+    backend._storage = _FakeSkillStorage()
+
+    result = await backend.als("/skills/")
+
+    assert [_field(entry, "path") for entry in _field(result, "entries")] == ["/visible/"]
+
+
+async def test_skills_store_backend_reads_enabled_skills_from_graph_config(
+    monkeypatch,
+) -> None:
+    from src.infra.backend import skills_store as module
+
+    def fake_get_config():
+        return {"configurable": {"enabled_skills": ["visible"]}}
+
+    monkeypatch.setattr(module, "get_config", fake_get_config)
+    backend = SkillsStoreBackend(user_id="user-1")
     backend._storage = _FakeSkillStorage()
 
     result = await backend.als("/skills/")

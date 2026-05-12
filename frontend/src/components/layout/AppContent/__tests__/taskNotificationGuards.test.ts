@@ -1,7 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { shouldSurfaceTaskNotification } from "../taskNotificationGuards.ts";
+import {
+  shouldAttemptBrowserNotification,
+  shouldSurfaceTaskNotification,
+} from "../taskNotificationGuards.ts";
 
 test("does not surface task notifications for the visible active session", () => {
   assert.equal(
@@ -30,5 +33,29 @@ test("surfaces task notifications for inactive or hidden sessions", () => {
       visibilityState: "hidden",
     }),
     true,
+  );
+});
+
+test("attempts browser notifications whenever the API is supported", () => {
+  assert.equal(
+    shouldAttemptBrowserNotification({
+      isSupported: true,
+      cachedPermission: "default",
+    }),
+    true,
+  );
+  assert.equal(
+    shouldAttemptBrowserNotification({
+      isSupported: true,
+      cachedPermission: "denied",
+    }),
+    true,
+  );
+  assert.equal(
+    shouldAttemptBrowserNotification({
+      isSupported: false,
+      cachedPermission: "granted",
+    }),
+    false,
   );
 });

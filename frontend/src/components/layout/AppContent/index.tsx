@@ -4,6 +4,10 @@ import { SIDEBAR_COLLAPSED_STORAGE_KEY } from "../../../hooks/useAuth";
 import { authApi } from "../../../services/api";
 import { ChatAppContent } from "./ChatAppContent";
 import { NonChatAppContent } from "./NonChatAppContent";
+import {
+  APP_TOAST_SIDEBAR_OFFSET_VAR,
+  getAppToastSidebarOffset,
+} from "./appToastLayout";
 import type { TabType } from "./types";
 
 interface AppContentProps {
@@ -43,6 +47,20 @@ export function AppContent({ activeTab }: AppContentProps) {
     return () =>
       window.removeEventListener("sidebar-collapsed-changed", handler);
   }, []);
+
+  useEffect(() => {
+    if (typeof document === "undefined") return undefined;
+
+    const rootStyle = document.documentElement.style;
+    rootStyle.setProperty(
+      APP_TOAST_SIDEBAR_OFFSET_VAR,
+      getAppToastSidebarOffset({ sidebarCollapsed }),
+    );
+
+    return () => {
+      rootStyle.removeProperty(APP_TOAST_SIDEBAR_OFFSET_VAR);
+    };
+  }, [sidebarCollapsed]);
 
   const handleCloseProfileModal = useCallback(
     () => setShowProfileModal(false),

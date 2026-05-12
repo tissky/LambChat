@@ -20,6 +20,7 @@ from deepagents.backends.utils import (
     format_content_with_line_numbers,
     slice_read_response,
 )
+from langgraph.config import get_config
 
 from src.infra.backend._skills_path_utils import (
     SKILL_NAME_PATTERN,
@@ -110,6 +111,22 @@ class SkillsStoreBackend(BackendProtocol):
         self._enabled_skills = enabled_skills
         self._storage: Optional[SkillStorage] = None
 
+    def _get_configurable(self) -> dict[str, Any]:
+        """Return the active graph configurable values, if available."""
+        config = None
+        if self._runtime and hasattr(self._runtime, "config"):
+            config = self._runtime.config
+        else:
+            try:
+                config = get_config()
+            except (RuntimeError, KeyError):
+                return {}
+
+        if not isinstance(config, dict):
+            return {}
+        configurable = config.get("configurable", {})
+        return configurable if isinstance(configurable, dict) else {}
+
     async def _get_storage(self) -> SkillStorage:
         """获取 SkillStorage 实例（使用全局缓存）"""
         if self._storage is None:
@@ -121,11 +138,8 @@ class SkillsStoreBackend(BackendProtocol):
         if self._disabled_skills is not None:
             return {str(name) for name in self._disabled_skills}
 
-        if not self._runtime or not hasattr(self._runtime, "config"):
-            return set()
-
         try:
-            configurable = self._runtime.config.get("configurable", {})
+            configurable = self._get_configurable()
             disabled_skills = configurable.get("disabled_skills") or []
             if isinstance(disabled_skills, list):
                 return {str(name) for name in disabled_skills}
@@ -139,11 +153,8 @@ class SkillsStoreBackend(BackendProtocol):
         if self._enabled_skills is not None:
             return {str(name) for name in self._enabled_skills}
 
-        if not self._runtime or not hasattr(self._runtime, "config"):
-            return None
-
         try:
-            configurable = self._runtime.config.get("configurable", {})
+            configurable = self._get_configurable()
             if "enabled_skills" not in configurable:
                 return None
             enabled_skills = configurable.get("enabled_skills")
@@ -180,13 +191,7 @@ class SkillsStoreBackend(BackendProtocol):
 
     async def _emit_skills_changed(self, action: str, skill_name: str, files_count: int = 1):
         """发送 skills 变更事件"""
-        if not self._runtime:
-            return
-        presenter = (
-            self._runtime.config.get("configurable", {}).get("presenter")
-            if hasattr(self._runtime, "config")
-            else None
-        )
+        presenter = self._get_configurable().get("presenter")
         if presenter:
             await presenter.emit_skills_changed(
                 action=action,

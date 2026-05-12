@@ -47,12 +47,6 @@
     "selectMode": "选择模式",
     "selectModeDesc": "切换助手模式"
   },
-  "selectionActions": {
-    "ask": "提问",
-    "askPrompt": "我想针对下面这段内容提问：\n\n{{codeBlock}}\n\n我的问题是：",
-    "explain": "解释",
-    "explainPrompt": "请解释下面这段内容：\n\n{{codeBlock}}"
-  },
   "agentConfig": {
     "addFirstModel": "添加第一个模型",
     "addModel": "添加模型",
@@ -482,7 +476,11 @@
     "goodMorning": "早上好，{{name}}",
     "mentionNoResults": "没有匹配的角色",
     "message": {
+      "allFiles": "全部文件",
       "args": "参数",
+      "artifactsSubtitleFiles": "{{count}} 个文件",
+      "artifactsSubtitleMixed": "{{files}} 个文件 · {{projects}} 个项目",
+      "artifactsSubtitleProjects": "{{count}} 个项目",
       "assistant": "Assistant",
       "cancelled": "生成已取消",
       "collapse": "收起",
@@ -497,6 +495,7 @@
       "expandAll": "展开全部",
       "exportCsv": "导出 CSV",
       "filePath": "文件路径",
+      "files": "文件",
       "fork": "分叉",
       "forkFailed": "分叉失败",
       "forkSuccess": "已分叉到新会话",
@@ -505,6 +504,7 @@
       "model": "模型",
       "openInSidebar": "在侧栏中打开",
       "parameters": "参数",
+      "projects": "项目",
       "result": "结果",
       "running": "运行中...",
       "startTime": "开始时间",
@@ -684,6 +684,8 @@
     "docNotSupported": "不支持预览旧版 Word 文档",
     "download": "下载",
     "downloadFile": "下载文件",
+    "dwgPreviewHint": "请下载此文件，或将其转换为 DXF/PDF 格式后在浏览器中预览。",
+    "dwgPreviewUnsupported": "不支持 DWG 文件预览",
     "error": "加载文件失败",
     "excelParseError": "Excel 文件解析失败",
     "excelPreviewError": "Excel 预览错误",
@@ -717,7 +719,11 @@
     "noData": "暂无数据",
     "noFiles": "暂无文件",
     "noFilesFound": "未找到文件",
+    "openInNewTab": "在新窗口打开",
     "path": "路径",
+    "pdfPreviewTitle": "PDF 预览",
+    "pdfPreviewUnavailable": "PDF 预览不可用",
+    "pdfPreviewUnavailableHint": "当前浏览器无法在页面内打开这个 PDF，可以在新窗口中查看。",
     "pressEscToClose": "按 Esc 关闭",
     "preview": "预览",
     "previewMode": "预览模式",
@@ -747,8 +753,6 @@
     "viewSource": "查看源代码",
     "wordConversionError": "Word 文档转换失败",
     "wordPreviewError": "Word 预览错误",
-    "dwgPreviewUnsupported": "不支持 DWG 文件预览",
-    "dwgPreviewHint": "请下载此文件，或将其转换为 DXF/PDF 格式后在浏览器中预览。",
     "yesterday": "昨天",
     "zoomIn": "放大",
     "zoomOut": "缩小"
@@ -1600,6 +1604,12 @@
       "selectPermission": "请至少选择一个权限"
     }
   },
+  "selectionActions": {
+    "ask": "提问",
+    "askPrompt": "我想针对下面这段内容提问：\n\n{{codeBlock}}\n\n我的问题是：",
+    "explain": "解释",
+    "explainPrompt": "请解释下面这段内容：\n\n{{codeBlock}}"
+  },
   "seo": {
     "agents": {
       "description": "配置和管理 AI 智能体。设置系统提示词、选择模型、定义工具，编排多智能体工作流以处理复杂任务。",
@@ -1822,9 +1832,9 @@
   },
   "settings": {
     "defaultModel": "默认模型",
-    "firstEnabledModel": "第一个启用模型",
     "exportSettings": "导出设置",
     "exportSuccess": "设置导出成功",
+    "firstEnabledModel": "第一个启用模型",
     "importSettings": "导入设置",
     "importSuccess": "已导入 {{count}} 项设置",
     "loading": "加载设置中...",
@@ -2138,8 +2148,8 @@
     "langsmith": "LangSmith",
     "limits": "限制",
     "llm": "LLM",
-    "model": "模型",
     "mcp": "MCP",
+    "model": "模型",
     "policy": "策略",
     "pool": "连接池",
     "postgres": "PostgreSQL",

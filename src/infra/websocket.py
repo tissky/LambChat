@@ -256,8 +256,11 @@ class ConnectionManager:
             published = 0
             for route_key in sorted(route_keys):
                 instance_id = route_key.rsplit(":", 1)[-1]
-                await redis_client.publish(self._delivery_channel(instance_id), payload)
-                published += 1
+                subscriber_count = await redis_client.publish(
+                    self._delivery_channel(instance_id),
+                    payload,
+                )
+                published += int(subscriber_count or 0)
 
             # Fallback for edge cases where local connections exist but Redis route has
             # not been registered yet (for example after a transient Redis error).

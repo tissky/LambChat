@@ -47,12 +47,6 @@
     "selectMode": "Select Mode",
     "selectModeDesc": "Switch agent mode"
   },
-  "selectionActions": {
-    "ask": "Ask",
-    "askPrompt": "I want to ask a question about this text:\n\n{{codeBlock}}\n\nMy question is:",
-    "explain": "Explain",
-    "explainPrompt": "Please explain this text:\n\n{{codeBlock}}"
-  },
   "agentConfig": {
     "addFirstModel": "Add your first model",
     "addModel": "Add Model",
@@ -482,7 +476,11 @@
     "goodMorning": "Good morning, {{name}}",
     "mentionNoResults": "No matching personas",
     "message": {
+      "allFiles": "All files",
       "args": "Args",
+      "artifactsSubtitleFiles": "{{count}} files",
+      "artifactsSubtitleMixed": "{{files}} files · {{projects}} projects",
+      "artifactsSubtitleProjects": "{{count}} projects",
       "assistant": "Assistant",
       "cancelled": "Generation cancelled",
       "collapse": "Collapse",
@@ -497,6 +495,7 @@
       "expandAll": "Expand all",
       "exportCsv": "Export CSV",
       "filePath": "File Path",
+      "files": "Files",
       "fork": "Fork",
       "forkFailed": "Fork failed",
       "forkSuccess": "Forked to new session",
@@ -505,6 +504,7 @@
       "model": "Model",
       "openInSidebar": "Open in sidebar",
       "parameters": "Parameters",
+      "projects": "Projects",
       "result": "Result",
       "running": "Running...",
       "startTime": "Start time",
@@ -684,6 +684,8 @@
     "docNotSupported": "Preview of legacy Word documents is not supported",
     "download": "Download",
     "downloadFile": "Download File",
+    "dwgPreviewHint": "Please download this file or convert it to DXF/PDF for browser preview.",
+    "dwgPreviewUnsupported": "DWG preview is not supported",
     "error": "Failed to load file",
     "excelParseError": "Failed to parse Excel file",
     "excelPreviewError": "Excel preview error",
@@ -716,7 +718,11 @@
     "noData": "No data available",
     "noFiles": "No files",
     "noFilesFound": "No files found",
+    "openInNewTab": "Open in new tab",
     "path": "Path",
+    "pdfPreviewTitle": "PDF Preview",
+    "pdfPreviewUnavailable": "PDF preview unavailable",
+    "pdfPreviewUnavailableHint": "This browser cannot display this PDF inline. You can view it in a new tab.",
     "pressEscToClose": "Press Esc to close",
     "preview": "Preview",
     "previewMode": "Preview Mode",
@@ -746,8 +752,6 @@
     "viewSource": "View Source",
     "wordConversionError": "Failed to convert Word document",
     "wordPreviewError": "Word preview error",
-    "dwgPreviewUnsupported": "DWG preview is not supported",
-    "dwgPreviewHint": "Please download this file or convert it to DXF/PDF for browser preview.",
     "yesterday": "Yesterday",
     "zoomIn": "Zoom in",
     "zoomOut": "Zoom out"
@@ -1599,6 +1603,12 @@
       "selectPermission": "Please select at least one permission"
     }
   },
+  "selectionActions": {
+    "ask": "Ask",
+    "askPrompt": "I want to ask a question about this text:\n\n{{codeBlock}}\n\nMy question is:",
+    "explain": "Explain",
+    "explainPrompt": "Please explain this text:\n\n{{codeBlock}}"
+  },
   "seo": {
     "agents": {
       "description": "Configure and manage AI agents. Set up system prompts, select models, define tools, and orchestrate multi-agent workflows for complex tasks.",
@@ -1821,9 +1831,9 @@
   },
   "settings": {
     "defaultModel": "Default Model",
-    "firstEnabledModel": "First enabled model",
     "exportSettings": "Export settings",
     "exportSuccess": "Settings exported successfully",
+    "firstEnabledModel": "First enabled model",
     "importSettings": "Import settings",
     "importSuccess": "Imported {{count}} settings",
     "loading": "Loading settings...",
@@ -2137,8 +2147,8 @@
     "langsmith": "LangSmith",
     "limits": "Limits",
     "llm": "LLM",
-    "model": "Model",
     "mcp": "MCP",
+    "model": "Model",
     "policy": "Policy",
     "pool": "Connection Pool",
     "postgres": "PostgreSQL",

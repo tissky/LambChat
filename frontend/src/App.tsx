@@ -14,6 +14,7 @@ import {
   getCachedSessionTitle,
   listenSessionTitleUpdated,
 } from "./utils/sessionTitleEvents";
+import { APP_TOASTER_CLASS_NAME } from "./components/layout/AppContent/appToastLayout";
 
 const SharedPage = lazy(() =>
   import("./components/share/SharedPage").then((m) => ({
@@ -306,6 +307,7 @@ function App() {
       <ErrorBoundary>
         <Toaster
           position="top-center"
+          containerClassName={APP_TOASTER_CLASS_NAME}
           containerStyle={{ top: "56px" }}
           toastOptions={{
             duration: 4000,

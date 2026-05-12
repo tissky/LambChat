@@ -15,13 +15,15 @@ class _FakeTool(BaseTool):
         return "ok"
 
 
-def test_retag_system_message_tags_multiple_tail_blocks() -> None:
+def test_retag_system_message_prefers_stable_prefix_before_volatile_tail() -> None:
     system_message = SystemMessage(
         content=[
             {"type": "text", "text": "base"},
-            {"type": "text", "text": "stable"},
-            {"type": "text", "text": "memory"},
-            {"type": "text", "text": "dynamic"},
+            {"type": "text", "text": "persona"},
+            {"type": "text", "text": "skills"},
+            {"type": "text", "text": "memory guide"},
+            {"type": "text", "text": "<memory_index>\n- user preference\n</memory_index>"},
+            {"type": "text", "text": "## MCP Tools (Deferred)\n\nDynamic tool list follows."},
         ]
     )
 
@@ -30,10 +32,52 @@ def test_retag_system_message_tags_multiple_tail_blocks() -> None:
     )
 
     assert isinstance(retagged.content, list)
-    assert "cache_control" not in retagged.content[0]
-    assert retagged.content[1]["cache_control"] == {"type": "ephemeral"}
+    assert retagged.content[0]["cache_control"] == {"type": "ephemeral"}
+    assert "cache_control" not in retagged.content[1]
     assert retagged.content[2]["cache_control"] == {"type": "ephemeral"}
     assert retagged.content[3]["cache_control"] == {"type": "ephemeral"}
+    assert "cache_control" not in retagged.content[4]
+    assert "cache_control" not in retagged.content[5]
+
+
+def test_retag_system_message_pins_global_base_block_for_cross_context_reuse() -> None:
+    system_message = SystemMessage(
+        content=[
+            {"type": "text", "text": "global base workflow"},
+            {"type": "text", "text": "persona for user A"},
+            {"type": "text", "text": "skills for session A"},
+            {"type": "text", "text": "memory guide"},
+        ]
+    )
+
+    retagged = PromptCachingMiddleware._retag_system_message(
+        system_message, {"type": "ephemeral"}, max_cached_blocks=3
+    )
+
+    assert isinstance(retagged.content, list)
+    assert retagged.content[0]["cache_control"] == {"type": "ephemeral"}
+    tagged_indices = [
+        i
+        for i, block in enumerate(retagged.content)
+        if isinstance(block, dict) and "cache_control" in block
+    ]
+    assert tagged_indices == [0, 2, 3]
+
+
+def test_runtime_user_specific_system_sections_are_volatile_for_cache() -> None:
+    volatile_blocks = [
+        {
+            "type": "text",
+            "text": "## Sandbox Runtime\n\nCurrent sandbox work_dir: `/tmp/session-a`",
+        },
+        {"type": "text", "text": "## Sandbox Tools (NOT MCP — DO NOT call directly)"},
+        {"type": "text", "text": "## Available Environment Variables"},
+        {"type": "text", "text": "<memory_index>\n- preference\n</memory_index>"},
+        {"type": "text", "text": "## MCP Tools (Deferred)\n\n- github:create_issue"},
+    ]
+
+    for block in volatile_blocks:
+        assert PromptCachingMiddleware._is_volatile_system_block(block)
 
 
 def test_retag_tools_tags_multiple_tail_tools() -> None:
@@ -70,7 +114,7 @@ async def test_prompt_caching_middleware_respects_four_breakpoint_budget() -> No
                     {"type": "text", "text": "persona"},
                     {"type": "text", "text": "skills"},
                     {"type": "text", "text": "memory"},
-                    {"type": "text", "text": "deferred"},
+                    {"type": "text", "text": "## MCP Tools (Deferred)\n\nDynamic deferred list."},
                 ]
             )
             self.tools = [_FakeTool(name=f"tool_{i}", description=f"tool {i}") for i in range(5)]
@@ -99,11 +143,11 @@ async def test_prompt_caching_middleware_respects_four_breakpoint_budget() -> No
     )
 
     assert system_breakpoints + tool_breakpoints == 4
-    assert "cache_control" not in result.system_message.content[0]
+    assert result.system_message.content[0]["cache_control"] == {"type": "ephemeral"}
     assert "cache_control" not in result.system_message.content[1]
     assert result.system_message.content[2]["cache_control"] == {"type": "ephemeral"}
     assert result.system_message.content[3]["cache_control"] == {"type": "ephemeral"}
-    assert result.system_message.content[4]["cache_control"] == {"type": "ephemeral"}
+    assert "cache_control" not in result.system_message.content[4]
     assert result.tools[-1].extras == {"cache_control": {"type": "ephemeral"}}
 
 

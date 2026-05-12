@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 import vm from "node:vm";
 
-function loadServiceWorker({ caches, fetchImpl }) {
+function loadServiceWorker({ caches, fetchImpl, skipWaitingImpl }) {
   const listeners = new Map();
   const self = {
     location: { origin: "https://lambchat.com" },
@@ -16,7 +16,7 @@ function loadServiceWorker({ caches, fetchImpl }) {
       openWindow: () => Promise.resolve(),
     },
     registration: {},
-    skipWaiting: () => Promise.resolve(),
+    skipWaiting: skipWaitingImpl || (() => Promise.resolve()),
   };
 
   const context = vm.createContext({
@@ -49,6 +49,19 @@ async function dispatchFetch(listeners, request) {
   return responsePromise;
 }
 
+async function dispatchMessage(listeners, data) {
+  let waitUntilPromise;
+  const event = {
+    data,
+    waitUntil(promise) {
+      waitUntilPromise = Promise.resolve(promise);
+    },
+  };
+
+  listeners.get("message")(event);
+  await waitUntilPromise;
+}
+
 test("serves navigation from the network when CacheStorage open fails", async () => {
   const listeners = loadServiceWorker({
     caches: {
@@ -74,4 +87,22 @@ test("serves navigation from the network when CacheStorage open fails", async ()
 
   assert.equal(response.status, 200);
   assert.match(await response.text(), /LambChat/);
+});
+
+test("activates a waiting service worker when the page requests it", async () => {
+  let skipWaitingCalls = 0;
+  const listeners = loadServiceWorker({
+    caches: {
+      open: () => Promise.reject(new Error("cache unavailable")),
+    },
+    fetchImpl: () => Promise.reject(new Error("network unavailable")),
+    skipWaitingImpl: () => {
+      skipWaitingCalls += 1;
+      return Promise.resolve();
+    },
+  });
+
+  await dispatchMessage(listeners, { type: "SKIP_WAITING" });
+
+  assert.equal(skipWaitingCalls, 1);
 });

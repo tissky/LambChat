@@ -50,8 +50,10 @@ from src.infra.logging import get_logger, setup_logging
 from src.infra.monitoring import get_memory_monitor
 from src.infra.runtime_services import start_runtime_services, stop_runtime_services
 from src.infra.share.seo import (
+    build_public_route_seo,
     build_shared_page_error_seo,
     build_shared_page_seo,
+    inject_public_route_seo_into_html,
     inject_share_seo_into_html,
 )
 from src.kernel.config import initialize_settings, settings
@@ -485,7 +487,7 @@ def create_app() -> FastAPI:
 
         # SPA fallback - serve index.html for all unmatched routes
         @app.get("/{full_path:path}")
-        async def serve_spa(full_path: str):
+        async def serve_spa(full_path: str, request: Request):
             """Serve SPA index.html for client-side routing."""
             # First, check if it's a static file
             static_file = static_dir / full_path
@@ -494,7 +496,14 @@ def create_app() -> FastAPI:
             # Otherwise, serve index.html for SPA routing
             index_file = static_dir / "index.html"
             if index_file.exists():
-                return FileResponse(str(index_file))
+                base_url = getattr(settings, "APP_BASE_URL", "").rstrip("/") or str(
+                    request.base_url
+                ).rstrip("/")
+                path = f"/{full_path}" if full_path else "/"
+                seo = build_public_route_seo(base_url=base_url, path=path)
+                html_doc = index_file.read_text(encoding="utf-8")
+                rendered = inject_public_route_seo_into_html(html_doc, seo)
+                return HTMLResponse(content=rendered)
             return {"error": "Frontend not built. Run 'npm run build' in frontend directory."}
     elif frontend_target and frontend_target[0] == "redirect":
         frontend_dev_url = frontend_target[1]

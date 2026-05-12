@@ -43,8 +43,9 @@ class PromptCachingMiddleware(AgentMiddleware):
        system blocks, reserving one for tools when possible and using the rest
        for the system-message tail.
 
-    Result: cache tags stay valid while still covering the stable prompt tail
-    (base prompt + workflow + skills + memory + MCP/deferred guidance).
+    Result: cache tags stay valid while covering the stable prompt prefix
+    (base prompt + workflow + persona + skills + memory guide) before volatile
+    blocks such as memory indexes or deferred tool lists.
     """
 
     _CACHE_CONTROL = {"type": "ephemeral"}
@@ -81,10 +82,56 @@ class PromptCachingMiddleware(AgentMiddleware):
     # ---- system message ---------------------------------------------------
 
     @staticmethod
+    def _block_text(block: Any) -> str:
+        if isinstance(block, dict):
+            return str(block.get("text", ""))
+        return str(block)
+
+    @classmethod
+    def _is_volatile_system_block(cls, block: Any) -> bool:
+        """Return True for system blocks that are expected to change often."""
+        text = cls._block_text(block).strip().lower()
+        volatile_prefixes = (
+            "<memory_index>",
+            "## mcp tools (deferred)",
+            "## sandbox runtime",
+            "## sandbox tools",
+            "## available environment variables",
+        )
+        return any(text.startswith(prefix) for prefix in volatile_prefixes)
+
+    @classmethod
+    def _cacheable_system_block_count(cls, system_message: Any) -> int:
+        """Count the stable prefix before the first volatile system block."""
+        blocks = _system_message_to_blocks(system_message)
+        for i, block in enumerate(blocks):
+            if cls._is_volatile_system_block(block):
+                return i
+        return len(blocks)
+
+    @staticmethod
+    def _cache_indices_for_stable_prefix(cacheable_count: int, max_cached_blocks: int) -> list[int]:
+        """Pick cache breakpoints for stable blocks.
+
+        Always include block 0 when possible so the global base prompt can be
+        reused across different personas, skills, sessions, and runtime sections.
+        Remaining breakpoints go to the tail of the stable prefix.
+        """
+        if cacheable_count <= 0 or max_cached_blocks <= 0:
+            return []
+
+        if max_cached_blocks == 1 or cacheable_count == 1:
+            return [0]
+
+        tail_budget = min(max_cached_blocks - 1, cacheable_count - 1)
+        tail_start = cacheable_count - tail_budget
+        return [0, *range(tail_start, cacheable_count)]
+
+    @staticmethod
     def _retag_system_message(
         system_message: Any, cache_control: dict, *, max_cached_blocks: int = 4
     ) -> Any:
-        """Strip stale cache_control from blocks and tag the final N blocks."""
+        """Strip stale cache_control and tag the stable prefix before volatile blocks."""
         if system_message is None:
             return system_message
 
@@ -100,9 +147,17 @@ class PromptCachingMiddleware(AgentMiddleware):
         if max_cached_blocks <= 0:
             return SystemMessage(content=blocks)
 
-        # Tag the last N blocks so semi-stable sections remain cacheable
-        start_idx = max(len(blocks) - max_cached_blocks, 0)
-        for i in range(start_idx, len(blocks)):
+        cacheable_count = PromptCachingMiddleware._cacheable_system_block_count(
+            SystemMessage(content=blocks)
+        )
+        if cacheable_count <= 0:
+            return SystemMessage(content=blocks)
+
+        # Tag global base plus the tail of the stable prefix. Later volatile
+        # blocks still get sent, but they do not consume cache breakpoints.
+        for i in PromptCachingMiddleware._cache_indices_for_stable_prefix(
+            cacheable_count, max_cached_blocks
+        ):
             block = blocks[i]
             base = block if isinstance(block, dict) else {"type": "text", "text": str(block)}
             blocks[i] = {**base, "cache_control": cache_control}
@@ -155,7 +210,7 @@ class PromptCachingMiddleware(AgentMiddleware):
             return await handler(request)
 
         overrides: dict[str, Any] = {}
-        system_block_count = len(_system_message_to_blocks(request.system_message))
+        system_block_count = self._cacheable_system_block_count(request.system_message)
         tool_count = sum(1 for tool in request.tools or [] if isinstance(tool, BaseTool))
 
         reserved_tool_breakpoints = 1 if tool_count > 0 and self._max_cached_tools > 0 else 0

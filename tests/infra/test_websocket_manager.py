@@ -29,6 +29,7 @@ class _FakeRedisClient:
         self.values: dict[str, str] = {}
         self.expirations: dict[str, int] = {}
         self.published: list[tuple[str, str]] = []
+        self.publish_subscriber_count = 1
 
     async def get(self, key: str) -> str | None:
         return self.values.get(key)
@@ -53,7 +54,7 @@ class _FakeRedisClient:
 
     async def publish(self, channel: str, message: str) -> int:
         self.published.append((channel, message))
-        return 1
+        return self.publish_subscriber_count
 
 
 class _FakeHub:
@@ -163,6 +164,29 @@ async def test_send_to_user_uses_instance_targeted_channels(
         ),
     ]
     assert isolated_pool_flags == [True]
+
+
+@pytest.mark.asyncio
+async def test_send_to_user_reports_zero_when_route_channel_has_no_subscribers(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fake_redis = _FakeRedisClient()
+    fake_redis.values["ws:route:user-1:instance-a"] = "1"
+    fake_redis.publish_subscriber_count = 0
+    monkeypatch.setattr(
+        "src.infra.websocket.create_redis_client",
+        lambda isolated_pool=False: fake_redis,
+    )
+
+    manager = ConnectionManager()
+    manager._instance_id = "instance-a"
+
+    sent = await manager.send_to_user_with_broadcast(
+        "user-1",
+        {"type": "task:complete", "data": {"run_id": "run-1"}},
+    )
+
+    assert sent == 0
 
 
 @pytest.mark.asyncio

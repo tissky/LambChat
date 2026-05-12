@@ -1,4 +1,10 @@
-from src.infra.share.seo import build_shared_page_seo, inject_share_seo_into_html
+from src.infra.share.seo import (
+    build_public_route_seo,
+    build_shared_page_error_seo,
+    build_shared_page_seo,
+    inject_public_route_seo_into_html,
+    inject_share_seo_into_html,
+)
 
 
 def test_build_shared_page_seo_uses_share_specific_metadata() -> None:
@@ -40,6 +46,18 @@ def test_build_shared_page_seo_uses_share_specific_metadata() -> None:
     assert "技术交底书已完整生成" in seo.description
     assert "内部推理内容" not in seo.description
     assert "/home/user/outputs/secret.docx" not in seo.description
+
+
+def test_build_shared_page_error_seo_returns_noindex_metadata() -> None:
+    seo = build_shared_page_error_seo(
+        base_url="https://lambchat.com",
+        share_id="missing-share",
+        reason="not_found",
+    )
+
+    assert seo.title == "Shared session not found - LambChat"
+    assert seo.canonical_url == "https://lambchat.com/shared/missing-share"
+    assert seo.robots == "noindex, follow, max-image-preview:large"
 
 
 def test_inject_share_seo_into_html_replaces_default_meta_and_adds_preview() -> None:
@@ -95,3 +113,42 @@ def test_inject_share_seo_into_html_replaces_default_meta_and_adds_preview() -> 
     assert "Shared session preview" in rendered
     assert "clivia.yang" in rendered
     assert "技术交底书已完整生成" in rendered
+
+
+def test_inject_public_home_seo_adds_crawlable_landing_content() -> None:
+    html = """
+<!doctype html>
+<html lang="en">
+  <head>
+    <link rel="canonical" href="https://lambchat.com/" />
+    <title>LambChat - AI Agent Platform</title>
+    <meta name="description" content="Default description" />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Default og title" />
+    <meta property="og:description" content="Default og description" />
+    <meta property="og:url" content="https://lambchat.com/" />
+    <meta name="twitter:title" content="Default twitter title" />
+    <meta name="twitter:description" content="Default twitter description" />
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>
+""".strip()
+
+    seo = build_public_route_seo(base_url="https://lambchat.com", path="/")
+    rendered = inject_public_route_seo_into_html(html, seo)
+
+    assert '<link rel="canonical" href="https://lambchat.com/"' in rendered
+    assert 'meta name="robots" content="index, follow, max-image-preview:large"' in rendered
+    assert "<h1>LambChat AI Agent Platform</h1>" in rendered
+    assert "Multi-model AI chat" in rendered
+    assert "Model Context Protocol" in rendered
+
+
+def test_build_public_route_seo_marks_app_routes_noindex() -> None:
+    seo = build_public_route_seo(base_url="https://lambchat.com", path="/chat")
+
+    assert seo.canonical_url == "https://lambchat.com/chat"
+    assert seo.robots == "noindex, follow, max-image-preview:large"

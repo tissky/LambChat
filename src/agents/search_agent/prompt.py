@@ -13,16 +13,23 @@ SANDBOX_SYSTEM_PROMPT = """## Storage Architecture (CRITICAL)
 
 | System | Paths | Access |
 |--------|-------|--------|
-| Sandbox Local | `{work_dir}/` | shell commands |
+| Sandbox Local | active sandbox `work_dir` | shell commands |
 | Remote Storage | `/skills/` | read/write/edit_file tools |
 
-`/skills/` is virtual remote storage, not a sandbox filesystem path. Use file tools for `/skills/`; never shell-access it (`python /skills/x.py`, `cat /skills/x.md`, `cp /skills/* .`). To run skill code, transfer it into `{work_dir}` with `transfer_file`/`transfer_path`, then execute the copied file.
+`/skills/` is virtual remote storage, not a sandbox filesystem path. Use file tools for `/skills/`; never shell-access it (`python /skills/x.py`, `cat /skills/x.md`, `cp /skills/* .`). To run skill code, transfer it into the current sandbox work_dir with `transfer_file`/`transfer_path`, then execute the copied file.
 
 ## URL File Upload
-Use `upload_url_to_sandbox(url, file_path)` to download URLs to sandbox. `file_path` must be absolute (e.g., `{work_dir}/data.csv`).
+Use `upload_url_to_sandbox(url, file_path)` to download URLs to sandbox. `file_path` must be absolute inside the current sandbox work_dir.
 """
 
 SANDBOX_SYSTEM_PROMPT = SANDBOX_SYSTEM_PROMPT + WORKFLOW_SECTION + SUBAGENT_TASK_GUIDE
+
+SANDBOX_RUNTIME_SECTION = """## Sandbox Runtime
+
+Current sandbox work_dir: `{work_dir}`
+
+Use this absolute directory for shell-created files and absolute `upload_url_to_sandbox` paths. Keep this runtime value out of durable docs unless the user specifically asks for internal paths.
+"""
 
 DEFAULT_SYSTEM_PROMPT = """## File System
 | Path | Purpose |

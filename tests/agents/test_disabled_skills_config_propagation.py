@@ -7,6 +7,7 @@ import pytest
 
 class _FakeDeepAgent:
     def __init__(self) -> None:
+        self.captured_create_kwargs = None
         self.captured_inner_config = None
 
     def with_config(self, _config):
@@ -57,7 +58,12 @@ def _patch_common(monkeypatch: pytest.MonkeyPatch, module, fake_graph: _FakeDeep
     monkeypatch.setattr(module, "acreate_store", fake_store)
     monkeypatch.setattr(module, "emit_token_usage", fake_emit_token_usage)
     monkeypatch.setattr(module, "AgentEventProcessor", _FakeEventProcessor)
-    monkeypatch.setattr(module, "create_deep_agent", lambda **_kwargs: fake_graph)
+
+    def fake_create_deep_agent(**kwargs):
+        fake_graph.captured_create_kwargs = kwargs
+        return fake_graph
+
+    monkeypatch.setattr(module, "create_deep_agent", fake_create_deep_agent)
     monkeypatch.setattr(module, "create_retry_middleware", lambda **_kwargs: [])
     monkeypatch.setattr(module, "ToolResultBinaryMiddleware", lambda **_kwargs: object())
     monkeypatch.setattr(module, "SubagentActivityMiddleware", lambda **_kwargs: object())
@@ -99,6 +105,47 @@ async def test_fast_agent_node_propagates_disabled_skills_to_inner_config(
 
 
 @pytest.mark.asyncio
+async def test_fast_agent_node_passes_backend_instance_to_deepagents(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from src.agents.fast_agent import nodes as fast_nodes
+
+    fake_graph = _FakeDeepAgent()
+    _patch_common(monkeypatch, fast_nodes, fake_graph)
+
+    backend_instance = object()
+
+    def backend_factory(_runtime):
+        return backend_instance
+
+    monkeypatch.setattr(
+        fast_nodes,
+        "create_persistent_backend_factory",
+        lambda **_kwargs: backend_factory,
+    )
+
+    context = SimpleNamespace(user_id="user-1", skills=[], deferred_manager=None)
+    config = {
+        "configurable": {
+            "context": context,
+            "presenter": object(),
+            "base_url": "",
+            "agent_options": {},
+        }
+    }
+
+    await fast_nodes.fast_agent_node(
+        {"input": "hello", "session_id": "session-1", "attachments": []},
+        config,
+    )
+
+    assert fake_graph.captured_create_kwargs is not None
+    assert fake_graph.captured_create_kwargs["backend"] is backend_instance
+    assert fake_graph.captured_inner_config is not None
+    assert fake_graph.captured_inner_config["configurable"]["backend"] is backend_instance
+
+
+@pytest.mark.asyncio
 async def test_search_agent_node_propagates_disabled_skills_to_inner_config(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -108,7 +155,7 @@ async def test_search_agent_node_propagates_disabled_skills_to_inner_config(
     _patch_common(monkeypatch, search_nodes, fake_graph)
 
     async def fake_create_backend_and_prompt(**_kwargs):
-        return object(), "system prompt", object(), None
+        return object(), "system prompt", object(), None, None
 
     monkeypatch.setattr(search_nodes, "_create_backend_and_prompt", fake_create_backend_and_prompt)
 
@@ -131,3 +178,43 @@ async def test_search_agent_node_propagates_disabled_skills_to_inner_config(
 
     assert fake_graph.captured_inner_config is not None
     assert fake_graph.captured_inner_config["configurable"]["disabled_skills"] == ["hidden-skill"]
+
+
+@pytest.mark.asyncio
+async def test_search_agent_node_passes_backend_instance_to_deepagents(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from src.agents.search_agent import nodes as search_nodes
+
+    fake_graph = _FakeDeepAgent()
+    _patch_common(monkeypatch, search_nodes, fake_graph)
+
+    backend_instance = object()
+
+    def backend_factory(_runtime):
+        return backend_instance
+
+    async def fake_create_backend_and_prompt(**_kwargs):
+        return backend_factory, "system prompt", object(), None, None
+
+    monkeypatch.setattr(search_nodes, "_create_backend_and_prompt", fake_create_backend_and_prompt)
+
+    context = SimpleNamespace(user_id="user-1", skills=[], deferred_manager=None)
+    config = {
+        "configurable": {
+            "context": context,
+            "presenter": object(),
+            "base_url": "",
+            "agent_options": {},
+        }
+    }
+
+    await search_nodes.agent_node(
+        {"input": "hello", "session_id": "session-1", "attachments": []},
+        config,
+    )
+
+    assert fake_graph.captured_create_kwargs is not None
+    assert fake_graph.captured_create_kwargs["backend"] is backend_instance
+    assert fake_graph.captured_inner_config is not None
+    assert fake_graph.captured_inner_config["configurable"]["backend"] is backend_instance

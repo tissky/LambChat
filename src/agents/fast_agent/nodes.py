@@ -115,6 +115,7 @@ async def fast_agent_node(state: Dict[str, Any], config: RunnableConfig) -> Dict
     backend_factory = create_persistent_backend_factory(
         assistant_id=assistant_id, user_id=context.user_id
     )
+    backend = backend_factory(None) if callable(backend_factory) else backend_factory
     logger.info(f"[FastAgent] Using PersistentBackend for assistant: {assistant_id}")
     backend_init_time = time.time() - backend_start
     logger.debug(f"[FastAgent] Backend init: {backend_init_time * 1000:.3f}ms")
@@ -150,7 +151,7 @@ async def fast_agent_node(state: Dict[str, Any], config: RunnableConfig) -> Dict
     subagent_middleware = [
         *create_retry_middleware(fallback_model=fallback_model_value, thinking=thinking_config),
         ToolResultBinaryMiddleware(base_url=subagent_base_url),
-        SubagentActivityMiddleware(backend=backend_factory),
+        SubagentActivityMiddleware(backend=backend),
     ]
     if context.deferred_manager is not None:
         from src.infra.agent.middleware import ToolSearchMiddleware
@@ -203,7 +204,7 @@ async def fast_agent_node(state: Dict[str, Any], config: RunnableConfig) -> Dict
     inner_graph = create_deep_agent(
         model=llm,
         system_prompt=system_prompt,
-        backend=backend_factory,
+        backend=backend,
         tools=filtered_tools,
         checkpointer=inner_checkpointer,
         store=store,
@@ -217,7 +218,7 @@ async def fast_agent_node(state: Dict[str, Any], config: RunnableConfig) -> Dict
     inner_config: RunnableConfig = {
         "configurable": {
             "thread_id": state.get("session_id", str(uuid.uuid4())),
-            "backend": backend_factory,
+            "backend": backend,
             "context": context,
             "disabled_skills": configurable.get("disabled_skills"),
             "enabled_skills": configurable.get("enabled_skills"),

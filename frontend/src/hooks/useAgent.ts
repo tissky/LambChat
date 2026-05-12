@@ -42,6 +42,7 @@ import { createOptimisticMessagesForSend } from "./useAgent/optimisticMessages";
 import { resolvePersonaEnabledSkills } from "./useAgent/personaRequestConfig";
 import { translateBackendError } from "../utils/backendErrors";
 import { dispatchSessionTitleUpdated } from "../utils/sessionTitleEvents";
+import { resolveAvailableAgentId } from "./useAgent/agentSelection";
 
 export function useAgent(options?: UseAgentOptions): UseAgentReturn {
   const { hasAnyPermission } = useAuth();
@@ -166,14 +167,17 @@ export function useAgent(options?: UseAgentOptions): UseAgentReturn {
       });
       if (!response.ok) throw new Error("Failed to fetch agents");
       const data: AgentListResponse = await response.json();
-      setAgents(data.agents || []);
+      const availableAgents = data.agents || [];
+      setAgents(availableAgents);
       setAllowedModelIds(data.allowed_model_ids ?? null);
-      // Use ref to check currentAgent, avoiding dependency cycle
-      if (!currentAgentRef.current && data.agents?.length > 0) {
-        const defaultAgentId = data.default_agent || data.agents[0]?.id || "";
-        if (defaultAgentId) {
-          setCurrentAgent(defaultAgentId);
-        }
+      const nextAgentId = resolveAvailableAgentId(
+        currentAgentRef.current,
+        data.default_agent,
+        availableAgents,
+      );
+      if (nextAgentId !== currentAgentRef.current) {
+        currentAgentRef.current = nextAgentId;
+        setCurrentAgent(nextAgentId);
       }
     } catch (err) {
       console.error("Failed to fetch agents:", err);
@@ -216,14 +220,21 @@ export function useAgent(options?: UseAgentOptions): UseAgentReturn {
         const data: AgentListResponse = await response.json();
 
         // Update agents list
-        setAgents(data.agents || []);
+        const availableAgents = data.agents || [];
+        setAgents(availableAgents);
         setAllowedModelIds(data.allowed_model_ids ?? null);
 
         // Apply the new default agent if user doesn't have an active session
         // (i.e., no current messages means it's a good time to switch)
         const hasActiveSession = messagesRef.current.length > 0;
-        if (!hasActiveSession && data.default_agent) {
-          setCurrentAgent(data.default_agent);
+        const nextAgentId = resolveAvailableAgentId(
+          hasActiveSession ? currentAgentRef.current : "",
+          data.default_agent,
+          availableAgents,
+        );
+        if (nextAgentId !== currentAgentRef.current) {
+          currentAgentRef.current = nextAgentId;
+          setCurrentAgent(nextAgentId);
         }
       } catch (err) {
         console.error("Failed to fetch agents after preference update:", err);

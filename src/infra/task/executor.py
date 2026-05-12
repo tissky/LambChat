@@ -402,10 +402,24 @@ class TaskExecutor:
             except Exception:
                 pass
 
-            await manager.send_to_user_with_broadcast(user_id, notification)
-            logger.info(
-                f"Task notification sent: user_id={user_id}, session={session_id}, status={status.value}"
-            )
+            delivered_count = await manager.send_to_user_with_broadcast(user_id, notification)
+            if delivered_count <= 0:
+                logger.warning(
+                    "Task notification had no active WebSocket delivery: "
+                    "user_id=%s, session=%s, status=%s, delivered=%s",
+                    user_id,
+                    session_id,
+                    status.value,
+                    delivered_count,
+                )
+            else:
+                logger.info(
+                    "Task notification delivered: user_id=%s, session=%s, status=%s, delivered=%s",
+                    user_id,
+                    session_id,
+                    status.value,
+                    delivered_count,
+                )
         except Exception as e:
             logger.warning(f"Failed to send task notification: {e}")
 

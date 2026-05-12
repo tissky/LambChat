@@ -47,12 +47,6 @@
     "selectMode": "モード選択",
     "selectModeDesc": "エージェントモードを切り替え"
   },
-  "selectionActions": {
-    "ask": "質問",
-    "askPrompt": "このテキストについて質問したいです:\n\n{{codeBlock}}\n\n質問:",
-    "explain": "説明",
-    "explainPrompt": "このテキストを説明してください:\n\n{{codeBlock}}"
-  },
   "agentConfig": {
     "addFirstModel": "最初のモデルを追加",
     "addModel": "モデルを追加",
@@ -483,7 +477,11 @@
     "goodMorning": "おはようございます、{{name}}",
     "mentionNoResults": "一致するペルソナがありません",
     "message": {
+      "allFiles": "すべてのファイル",
       "args": "引数",
+      "artifactsSubtitleFiles": "{{count}} 件のファイル",
+      "artifactsSubtitleMixed": "{{files}} 件のファイル · {{projects}} 件のプロジェクト",
+      "artifactsSubtitleProjects": "{{count}} 件のプロジェクト",
       "assistant": "アシスタント",
       "cancelled": "生成がキャンセルされました",
       "collapse": "折りたたむ",
@@ -498,6 +496,7 @@
       "expandAll": "すべて展開",
       "exportCsv": "CSVをエクスポート",
       "filePath": "ファイルパス",
+      "files": "ファイル",
       "fork": "フォーク",
       "forkFailed": "フォークに失敗しました",
       "forkSuccess": "新しいセッションにフォークしました",
@@ -506,6 +505,7 @@
       "model": "モデル",
       "openInSidebar": "サイドバーで開く",
       "parameters": "パラメータ",
+      "projects": "プロジェクト",
       "result": "結果",
       "running": "実行中...",
       "startTime": "開始時刻",
@@ -685,6 +685,8 @@
     "docNotSupported": "旧形式の Word ドキュメントのプレビューには対応していません",
     "download": "ダウンロード",
     "downloadFile": "ファイルをダウンロード",
+    "dwgPreviewHint": "このファイルをダウンロードするか、DXF/PDFに変換してブラウザでプレビューしてください。",
+    "dwgPreviewUnsupported": "DWGプレビューには対応していません",
     "error": "ファイルの読み込みに失敗しました",
     "excelParseError": "Excelファイルの解析に失敗しました",
     "excelPreviewError": "Excelプレビューエラー",
@@ -718,7 +720,11 @@
     "noData": "データがありません",
     "noFiles": "ファイルがありません",
     "noFilesFound": "ファイルが見つかりません",
+    "openInNewTab": "新しいタブで開く",
     "path": "パス",
+    "pdfPreviewTitle": "PDF プレビュー",
+    "pdfPreviewUnavailable": "PDF プレビューを利用できません",
+    "pdfPreviewUnavailableHint": "現在のブラウザではこの PDF をインライン表示できません。新しいタブで表示できます。",
     "pressEscToClose": "Escを押して閉じる",
     "preview": "プレビュー",
     "previewMode": "プレビューモード",
@@ -748,8 +754,6 @@
     "viewSource": "ソースを表示",
     "wordConversionError": "Word文書の変換に失敗しました",
     "wordPreviewError": "Wordプレビューエラー",
-    "dwgPreviewUnsupported": "DWGプレビューには対応していません",
-    "dwgPreviewHint": "このファイルをダウンロードするか、DXF/PDFに変換してブラウザでプレビューしてください。",
     "yesterday": "昨日",
     "zoomIn": "拡大",
     "zoomOut": "縮小"
@@ -1597,6 +1601,12 @@
       "selectPermission": "少なくとも1つの権限を選択してください"
     }
   },
+  "selectionActions": {
+    "ask": "質問",
+    "askPrompt": "このテキストについて質問したいです:\n\n{{codeBlock}}\n\n質問:",
+    "explain": "説明",
+    "explainPrompt": "このテキストを説明してください:\n\n{{codeBlock}}"
+  },
   "seo": {
     "agents": {
       "description": "AIエージェントの設定と管理。システムプロンプト、モデル選択、ツール定義、マルチエージェントワークフローのオーケストレーション。",
@@ -1819,9 +1829,9 @@
   },
   "settings": {
     "defaultModel": "デフォルトモデル",
-    "firstEnabledModel": "最初の有効なモデル",
     "exportSettings": "設定をエクスポート",
     "exportSuccess": "設定をエクスポートしました",
+    "firstEnabledModel": "最初の有効なモデル",
     "importSettings": "設定をインポート",
     "importSuccess": "{{count}}件の設定をインポートしました",
     "loading": "設定を読み込み中...",
@@ -2135,8 +2145,8 @@
     "langsmith": "LangSmith",
     "limits": "制限",
     "llm": "LLM",
-    "model": "モデル",
     "mcp": "MCP",
+    "model": "モデル",
     "policy": "ポリシー",
     "pool": "接続プール",
     "postgres": "PostgreSQL",

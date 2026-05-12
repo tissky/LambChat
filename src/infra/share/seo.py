@@ -7,8 +7,11 @@ from datetime import datetime
 from typing import Any, Mapping, Sequence
 
 DEFAULT_SHARE_ROBOTS = "noindex, follow, max-image-preview:large"
+INDEX_ROBOTS = "index, follow, max-image-preview:large"
+NOINDEX_ROBOTS = "noindex, follow, max-image-preview:large"
 DEFAULT_SHARE_PREVIEW_LABEL = "Shared session preview"
 DEFAULT_SHARE_DESCRIPTION = "View this shared session on LambChat."
+PUBLIC_HOME_PATH = "/"
 
 _WHITESPACE_RE = re.compile(r"\s+")
 _ROOT_DIV_RE = re.compile(r'<div id="root"></div>')
@@ -29,6 +32,16 @@ class SharedPageSeo:
     preview_summary: str
     author_name: str
     published_date: str
+
+
+@dataclass(frozen=True)
+class PublicRouteSeo:
+    title: str
+    description: str
+    canonical_url: str
+    robots: str
+    og_type: str
+    preview_html: str
 
 
 def _normalize_text(value: Any) -> str:
@@ -166,6 +179,56 @@ def build_shared_page_error_seo(
     )
 
 
+def _canonical_url(base_url: str, path: str) -> str:
+    normalized_path = path if path.startswith("/") else f"/{path}"
+    if normalized_path == "/":
+        return f"{base_url.rstrip('/')}/"
+    return f"{base_url.rstrip('/')}{normalized_path}"
+
+
+def _is_public_indexable_path(path: str) -> bool:
+    return path in {"", PUBLIC_HOME_PATH}
+
+
+def _build_home_preview_html() -> str:
+    features = [
+        "Multi-model AI chat for Claude, GPT, Gemini, and other LLM providers.",
+        "Skills engine and Model Context Protocol integrations for extensible agent workflows.",
+        "Real-time streaming conversations, document processing, and team-ready access control.",
+    ]
+    feature_items = "\n".join(f"      <li>{html.escape(feature)}</li>" for feature in features)
+    return f"""<main data-public-preview="server" style="max-width: 920px; margin: 0 auto; padding: 48px 24px; font-family: 'Source Sans 3', Arial, sans-serif; color: #1c1917; background: #faf9f7;">
+    <p style="margin: 0 0 12px; font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; color: #78716c;">AI agent workspace</p>
+    <h1>LambChat AI Agent Platform</h1>
+    <p style="font-size: 18px; line-height: 1.7; color: #44403c;">LambChat is a pluggable, multi-tenant AI conversation platform for teams building agent workflows with Skills, MCP tools, and streaming model responses.</p>
+    <ul style="font-size: 16px; line-height: 1.8; color: #44403c;">
+{feature_items}
+    </ul>
+  </main>"""
+
+
+def build_public_route_seo(*, base_url: str, path: str) -> PublicRouteSeo:
+    normalized_path = path if path.startswith("/") else f"/{path}"
+    is_home = _is_public_indexable_path(normalized_path)
+    title = (
+        "LambChat - AI Agent Platform | Multi-Model Chat & Skill Engine" if is_home else "LambChat"
+    )
+    description = (
+        "LambChat is a pluggable, multi-tenant AI conversation platform for teams building multi-model agents with Skills, MCP tools, streaming chat, document processing, and role-based access."
+        if is_home
+        else "LambChat application route."
+    )
+
+    return PublicRouteSeo(
+        title=title,
+        description=description,
+        canonical_url=_canonical_url(base_url, normalized_path),
+        robots=INDEX_ROBOTS if is_home else NOINDEX_ROBOTS,
+        og_type="website",
+        preview_html=_build_home_preview_html() if is_home else "",
+    )
+
+
 def _replace_title(html_doc: str, value: str) -> str:
     replacement = f"<title>{html.escape(value, quote=True)}</title>"
     return re.sub(r"<title>.*?</title>", replacement, html_doc, count=1, flags=re.S)
@@ -224,6 +287,28 @@ def inject_share_seo_into_html(html_doc: str, seo: SharedPageSeo) -> str:
     replacement = f'{preview_markup}\n<div id="root"></div>'
     if _SHARED_PREVIEW_RE.search(rendered):
         return _SHARED_PREVIEW_RE.sub(replacement, rendered, count=1)
+    if _ROOT_DIV_RE.search(rendered):
+        return _ROOT_DIV_RE.sub(replacement, rendered, count=1)
+    return rendered
+
+
+def inject_public_route_seo_into_html(html_doc: str, seo: PublicRouteSeo) -> str:
+    rendered = html_doc
+    rendered = _replace_title(rendered, seo.title)
+    rendered = _replace_link(rendered, "canonical", seo.canonical_url)
+    rendered = _replace_meta(rendered, "name", "description", seo.description)
+    rendered = _replace_meta(rendered, "name", "robots", seo.robots)
+    rendered = _replace_meta(rendered, "property", "og:type", seo.og_type)
+    rendered = _replace_meta(rendered, "property", "og:title", seo.title)
+    rendered = _replace_meta(rendered, "property", "og:description", seo.description)
+    rendered = _replace_meta(rendered, "property", "og:url", seo.canonical_url)
+    rendered = _replace_meta(rendered, "name", "twitter:title", seo.title)
+    rendered = _replace_meta(rendered, "name", "twitter:description", seo.description)
+
+    if not seo.preview_html:
+        return rendered
+
+    replacement = f'<div id="root">\n  {seo.preview_html}\n</div>'
     if _ROOT_DIV_RE.search(rendered):
         return _ROOT_DIV_RE.sub(replacement, rendered, count=1)
     return rendered

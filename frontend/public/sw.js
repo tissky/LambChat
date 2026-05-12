@@ -25,6 +25,10 @@ const BACKEND_PREFIXES = [
 const STATIC_ASSET_PATTERN =
   /\.(?:css|js|mjs|png|jpg|jpeg|svg|webp|ico|woff|woff2|ttf|otf|json)$/i;
 
+function isSkipWaitingMessage(data) {
+  return data === "SKIP_WAITING" || data?.type === "SKIP_WAITING";
+}
+
 function isSameOrigin(url) {
   return url.origin === self.location.origin;
 }
@@ -96,6 +100,12 @@ self.addEventListener("activate", (event) => {
       )
       .then(() => self.clients.claim()),
   );
+});
+
+self.addEventListener("message", (event) => {
+  if (!isSkipWaitingMessage(event.data)) return;
+
+  event.waitUntil(self.skipWaiting());
 });
 
 async function networkFirstAppShell(request) {

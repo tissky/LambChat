@@ -6,7 +6,10 @@ import { X } from "lucide-react";
 import { useWebSocket } from "../../../hooks/useWebSocket";
 import { useBrowserNotification } from "../../../hooks/useBrowserNotification";
 import { sessionApi } from "../../../services/api";
-import { shouldSurfaceTaskNotification } from "./taskNotificationGuards";
+import {
+  shouldAttemptBrowserNotification,
+  shouldSurfaceTaskNotification,
+} from "./taskNotificationGuards";
 import { buildTaskNotificationCopy } from "./taskNotificationContent";
 import { isMobileDevice } from "../../../utils/mobile";
 
@@ -124,7 +127,12 @@ export function useWebSocketNotifications({
       };
 
       // Show browser notification (if permitted)
-      if (isSupported && permission === "granted") {
+      if (
+        shouldAttemptBrowserNotification({
+          isSupported,
+          cachedPermission: permission,
+        })
+      ) {
         notify(notificationCopy.title, {
           body: notificationCopy.body,
           onClick: navigateToSession,

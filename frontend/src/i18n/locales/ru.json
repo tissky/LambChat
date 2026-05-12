@@ -47,12 +47,6 @@
     "selectMode": "Выбор режима",
     "selectModeDesc": "Переключить режим агента"
   },
-  "selectionActions": {
-    "ask": "Спросить",
-    "askPrompt": "Я хочу задать вопрос об этом тексте:\n\n{{codeBlock}}\n\nМой вопрос:",
-    "explain": "Объяснить",
-    "explainPrompt": "Объясните этот текст:\n\n{{codeBlock}}"
-  },
   "agentConfig": {
     "addFirstModel": "Добавить первую модель",
     "addModel": "Добавить модель",
@@ -483,7 +477,11 @@
     "goodMorning": "Доброе утро, {{name}}",
     "mentionNoResults": "Нет подходящих персон",
     "message": {
+      "allFiles": "Все файлы",
       "args": "Аргументы",
+      "artifactsSubtitleFiles": "{{count}} файлов",
+      "artifactsSubtitleMixed": "{{files}} файлов · {{projects}} проектов",
+      "artifactsSubtitleProjects": "{{count}} проектов",
       "assistant": "Ассистент",
       "cancelled": "Генерация отменена",
       "collapse": "Свернуть",
@@ -498,6 +496,7 @@
       "expandAll": "Развернуть всё",
       "exportCsv": "Экспорт CSV",
       "filePath": "Путь к файлу",
+      "files": "Файлы",
       "fork": "Форк",
       "forkFailed": "Не удалось создать форк",
       "forkSuccess": "Форк создан в новой сессии",
@@ -506,6 +505,7 @@
       "model": "Модель",
       "openInSidebar": "Открыть в боковой панели",
       "parameters": "Параметры",
+      "projects": "Проекты",
       "result": "Результат",
       "running": "Выполняется...",
       "startTime": "Время начала",
@@ -687,6 +687,8 @@
     "docNotSupported": "Предпросмотр устаревших документов Word не поддерживается",
     "download": "Скачать",
     "downloadFile": "Скачать файл",
+    "dwgPreviewHint": "Пожалуйста, скачайте этот файл или преобразуйте его в DXF/PDF для просмотра в браузере.",
+    "dwgPreviewUnsupported": "Предпросмотр DWG не поддерживается",
     "error": "Не удалось загрузить файл",
     "excelParseError": "Не удалось обработать Excel файл",
     "excelPreviewError": "Ошибка предпросмотра Excel",
@@ -720,7 +722,11 @@
     "noData": "Нет данных",
     "noFiles": "Нет файлов",
     "noFilesFound": "Файлы не найдены",
+    "openInNewTab": "Открыть в новой вкладке",
     "path": "Путь",
+    "pdfPreviewTitle": "Предпросмотр PDF",
+    "pdfPreviewUnavailable": "Предпросмотр PDF недоступен",
+    "pdfPreviewUnavailableHint": "Этот браузер не может отобразить PDF встроенно. Вы можете просмотреть его в новой вкладке.",
     "pressEscToClose": "Нажмите Esc для закрытия",
     "preview": "Предпросмотр",
     "previewMode": "Режим предпросмотра",
@@ -750,8 +756,6 @@
     "viewSource": "Просмотр кода",
     "wordConversionError": "Не удалось преобразовать документ Word",
     "wordPreviewError": "Ошибка предпросмотра Word",
-    "dwgPreviewUnsupported": "Предпросмотр DWG не поддерживается",
-    "dwgPreviewHint": "Пожалуйста, скачайте этот файл или преобразуйте его в DXF/PDF для просмотра в браузере.",
     "yesterday": "Вчера",
     "zoomIn": "Увеличить",
     "zoomOut": "Уменьшить"
@@ -1599,6 +1603,12 @@
       "selectPermission": "Пожалуйста, выберите хотя бы одно право"
     }
   },
+  "selectionActions": {
+    "ask": "Спросить",
+    "askPrompt": "Я хочу задать вопрос об этом тексте:\n\n{{codeBlock}}\n\nМой вопрос:",
+    "explain": "Объяснить",
+    "explainPrompt": "Объясните этот текст:\n\n{{codeBlock}}"
+  },
   "seo": {
     "agents": {
       "description": "Настраивайте и управляйте AI-агентами. Устанавливайте системные промпты, выбирайте модели, определяйте инструменты и оркестрируйте мультиагентные рабочие процессы для сложных задач.",
@@ -1744,6 +1754,7 @@
     "NATIVE_MEMORY_AUTO_COMPACT_INTERVAL_SECONDS": "Как часто агент сжатия памяти сканирует пользователей выше порога, в секундах.",
     "NATIVE_MEMORY_AUTO_COMPACT_MIN_INTERVAL_SECONDS": "Минимальный интервал между попытками сжатия для одного пользователя, в секундах.",
     "NATIVE_MEMORY_AUTO_COMPACT_THRESHOLD": "Количество записей памяти на пользователя, после которого запускается автоматическое сжатие.",
+    "NATIVE_MEMORY_COMPACTION_MODEL_ID": "Конфигурация модели администратора для фонового агента сжатия памяти. Оставьте пустым для модели по умолчанию.",
     "NATIVE_MEMORY_EMBEDDING_API_BASE": "Базовый URL API эмбеддингов для векторного поиска (совместимый с OpenAI). Оставьте пустым для текстового режима.",
     "NATIVE_MEMORY_EMBEDDING_API_KEY": "Ключ API эмбеддингов (совместимая с OpenAI конечная точка)",
     "NATIVE_MEMORY_EMBEDDING_MODEL": "Имя модели эмбеддингов (например, text-embedding-3-small)",
@@ -1752,7 +1763,6 @@
     "NATIVE_MEMORY_INLINE_CONTENT_MAX_CHARS": "Максимальное количество символов, хранящихся в MongoDB, перед выгрузкой полного содержимого памяти в хранилище.",
     "NATIVE_MEMORY_MAX_TOKENS": "Максимальное количество токенов для ответов LLM памяти (извлечение, консолидация, переупорядочивание). Более высокие значения дают более длинные сводки, но стоят дороже.",
     "NATIVE_MEMORY_MODEL": "LLM-модель для извлечения, консолидации и переупорядочивания памяти. Оставьте пустым для использования первой доступной модели.",
-    "NATIVE_MEMORY_COMPACTION_MODEL_ID": "Конфигурация модели администратора для фонового агента сжатия памяти. Оставьте пустым для модели по умолчанию.",
     "NATIVE_MEMORY_PRUNE_THRESHOLD": "Количество дней, после которых неиспользуемые памяти удаляются при консолидации",
     "NATIVE_MEMORY_RERANK_API_BASE": "Базовый URL API конечной точки модели переупорядочивания нативной памяти.",
     "NATIVE_MEMORY_RERANK_API_KEY": "Ключ API конечной точки модели переупорядочивания нативной памяти.",
@@ -1821,9 +1831,9 @@
   },
   "settings": {
     "defaultModel": "Модель по умолчанию",
-    "firstEnabledModel": "Первая включенная модель",
     "exportSettings": "Экспорт настроек",
     "exportSuccess": "Настройки успешно экспортированы",
+    "firstEnabledModel": "Первая включенная модель",
     "importSettings": "Импорт настроек",
     "importSuccess": "Импортировано {{count}} настроек",
     "loading": "Загрузка настроек...",
@@ -2137,8 +2147,8 @@
     "langsmith": "LangSmith",
     "limits": "Ограничения",
     "llm": "LLM",
-    "model": "Модель",
     "mcp": "MCP",
+    "model": "Модель",
     "policy": "Политика",
     "pool": "Пул подключений",
     "postgres": "PostgreSQL",
