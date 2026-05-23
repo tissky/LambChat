@@ -178,6 +178,8 @@ def build_conversation_config(
             conversation_config["persona_avatar"] = request.persona_snapshot.avatar
     if request.project_id:
         conversation_config["project_id"] = request.project_id
+    if request.team_id:
+        conversation_config["team_id"] = request.team_id
     return conversation_config
 
 
@@ -217,6 +219,7 @@ async def _execute_agent_stream(
     enabled_skills: list[str] | None = None,
     persona_system_prompt: str | None = None,
     disabled_mcp_tools: list[str] | None = None,
+    team_id: str | None = None,
 ):
     """执行 Agent 并流式输出事件（供 TaskManager 调用）"""
     from src.infra.task.manager import TaskInterruptedError
@@ -237,6 +240,7 @@ async def _execute_agent_stream(
             enabled_skills=enabled_skills,
             persona_system_prompt=persona_system_prompt,
             disabled_mcp_tools=disabled_mcp_tools,
+            team_id=team_id,
         ):
             yield event
     except (asyncio.CancelledError, TaskInterruptedError):
@@ -341,6 +345,7 @@ async def chat_stream(
         "enabled_skills": request.enabled_skills,
         "persona_system_prompt": request.persona_system_prompt,
         "disabled_mcp_tools": request.disabled_mcp_tools,
+        "team_id": request.team_id,
     }
 
     # 检查并发限制
@@ -446,6 +451,7 @@ async def chat_stream(
             disabled_mcp_tools=request.disabled_mcp_tools,
             display_message=request.message,
             trace_id=trace_id,
+            team_id=request.team_id,
         )
     else:
         # STARTED — 正常提交后台任务
@@ -465,6 +471,7 @@ async def chat_stream(
             persona_system_prompt=request.persona_system_prompt,
             disabled_mcp_tools=request.disabled_mcp_tools,
             display_message=request.message,
+            team_id=request.team_id,
         )
 
     # 更新 session metadata，存储完整的对话配置
