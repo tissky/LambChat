@@ -208,7 +208,34 @@ export function collectRevealArtifacts(
   for (const part of parts || []) {
     collectFromPart(part, artifacts);
   }
-  return artifacts;
+  return dedupeRevealArtifacts(artifacts);
+}
+
+function normalizeArtifactPath(path: string): string {
+  return path
+    .trim()
+    .replace(/\\/g, "/")
+    .replace(/\/+/g, "/")
+    .replace(/^\/+|\/+$/g, "");
+}
+
+function getRevealArtifactDedupeKey(artifact: RevealArtifact): string {
+  if (artifact.kind === "file") {
+    const normalizedPath = normalizeArtifactPath(artifact.path);
+    return normalizedPath ? `file:${normalizedPath}` : artifact.id;
+  }
+
+  return `project:${artifact.preview.previewKey}`;
+}
+
+function dedupeRevealArtifacts(artifacts: RevealArtifact[]): RevealArtifact[] {
+  const deduped = new Map<string, RevealArtifact>();
+
+  for (const artifact of artifacts) {
+    deduped.set(getRevealArtifactDedupeKey(artifact), artifact);
+  }
+
+  return [...deduped.values()];
 }
 
 function updateTreeCounts(node: RevealArtifactTreeDir): {

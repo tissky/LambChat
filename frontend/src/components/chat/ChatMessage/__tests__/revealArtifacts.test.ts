@@ -95,6 +95,53 @@ test("collects successful file and project reveal artifacts from current message
   );
 });
 
+test("deduplicates repeated file reveal artifacts by source path and keeps the latest preview", () => {
+  const artifacts = collectRevealArtifacts([
+    {
+      type: "tool",
+      name: "reveal_file",
+      args: {},
+      success: true,
+      result: {
+        key: "revealed_files/first_durian_01_main.png",
+        url: "/api/upload/file/revealed_files/first_durian_01_main.png",
+        name: "durian_01_main.png",
+        type: "image",
+        size: 1024,
+        _meta: {
+          path: "/home/user/durian_images/durian_01_main.png",
+        },
+      },
+    },
+    {
+      type: "tool",
+      name: "reveal_file",
+      args: {},
+      success: true,
+      result: {
+        key: "revealed_files/latest_durian_01_main.png",
+        url: "/api/upload/file/revealed_files/latest_durian_01_main.png",
+        name: "durian_01_main.png",
+        type: "image",
+        size: 2048,
+        _meta: {
+          path: "/home/user/durian_images/durian_01_main.png",
+        },
+      },
+    },
+  ]);
+
+  assert.equal(artifacts.length, 1);
+  assert.equal(artifacts[0].kind, "file");
+  if (artifacts[0].kind !== "file") return;
+
+  assert.equal(
+    artifacts[0].preview.previewKey,
+    "revealed_files/latest_durian_01_main.png",
+  );
+  assert.equal(artifacts[0].fileSize, 2048);
+});
+
 test("builds stable nested artifact tree metadata", () => {
   const artifacts: RevealArtifact[] = [
     {
